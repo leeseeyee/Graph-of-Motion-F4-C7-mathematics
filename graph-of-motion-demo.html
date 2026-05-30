@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Graph of Motion — Interactive Demo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,900&family=Hanken+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#f4efe6;
+    --paper-2:#efe8db;
+    --ink:#211c16;
+    --muted:#736a5c;
+    --line:#d8cfbe;
+    --teal:#0d6b63;      /* distance-time */
+    --amber:#cf7a17;     /* velocity-time */
+    --coral:#c6452f;     /* misconception */
+    --gold:#d9a441;
+    --shadow:0 1px 0 #fff inset, 0 10px 30px -12px rgba(33,28,22,.35);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{background:var(--paper);color:var(--ink);font-family:"Hanken Grotesk",sans-serif;-webkit-font-smoothing:antialiased}
+  body{
+    background-image:radial-gradient(rgba(33,28,22,.035) 1px,transparent 1px);
+    background-size:22px 22px;
+    padding:clamp(14px,3vw,40px);
+    min-height:100vh;
+  }
+  .wrap{max-width:1120px;margin:0 auto}
+
+  /* Header */
+  header{margin-bottom:22px}
+  .kicker{
+    font-family:"Space Mono",monospace;font-size:12px;letter-spacing:.18em;
+    text-transform:uppercase;color:var(--teal);font-weight:700;margin-bottom:10px;
+    display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+  }
+  .kicker::before{content:"";width:34px;height:2px;background:var(--teal);display:inline-block}
+  h1{
+    font-family:"Fraunces",serif;font-weight:900;line-height:1.02;
+    font-size:clamp(30px,6vw,58px);letter-spacing:-.02em;max-width:16ch;
+  }
+  h1 em{font-style:italic;color:var(--teal)}
+  .sub{margin-top:14px;max-width:60ch;color:var(--muted);font-size:clamp(15px,2.2vw,17px);line-height:1.55}
+  .obj{
+    margin-top:16px;display:inline-flex;gap:10px;align-items:flex-start;
+    background:#fff8;border:1px solid var(--line);border-radius:12px;
+    padding:12px 16px;font-size:14px;max-width:60ch;line-height:1.5;
+  }
+  .obj b{color:var(--ink)}
+  .obj .tag{font-family:"Space Mono",monospace;font-size:11px;color:var(--coral);font-weight:700;white-space:nowrap;margin-top:1px}
+
+  /* Layout */
+  .grid{display:grid;grid-template-columns:1.15fr .85fr;gap:18px;margin-top:26px}
+  @media(max-width:860px){.grid{grid-template-columns:1fr}}
+  .card{
+    background:var(--paper-2);border:1px solid var(--line);border-radius:18px;
+    padding:18px;box-shadow:var(--shadow);position:relative;
+  }
+  .card h2{
+    font-family:"Space Mono",monospace;font-size:12px;letter-spacing:.12em;
+    text-transform:uppercase;color:var(--muted);font-weight:700;margin-bottom:14px;
+    display:flex;align-items:center;gap:8px;
+  }
+  .dot{width:9px;height:9px;border-radius:50%;display:inline-block}
+
+  /* Track */
+  .track-card{display:flex;flex-direction:column}
+  .stage{position:relative;height:230px;border-radius:12px;overflow:hidden;
+    background:linear-gradient(#eaf1ef 0%,#eaf1ef 62%,#e4dccb 62%,#ddd2bb 100%);
+    border:1px solid var(--line);
+  }
+  .sky-label{position:absolute;top:8px;left:12px;font-family:"Space Mono",monospace;
+    font-size:10px;letter-spacing:.1em;color:#9fb3ad;text-transform:uppercase}
+  .ground{position:absolute;left:0;right:0;bottom:34%;height:2px;background:var(--ink);opacity:.25}
+  .ruler{position:absolute;left:0;right:0;bottom:calc(34% - 22px);height:20px;
+    display:flex;justify-content:space-between;padding:0 14px;
+    font-family:"Space Mono",monospace;font-size:10px;color:var(--muted)}
+  .ruler span{position:relative}
+  .ruler span::before{content:"";position:absolute;top:-6px;left:50%;width:1px;height:6px;background:var(--line)}
+  /* Car */
+  .car{position:absolute;bottom:calc(34% + 1px);left:0;transform:translateX(-50%);
+    transition:none;will-change:left;z-index:4}
+  .car .body{width:54px;height:24px;background:var(--teal);border-radius:7px 9px 5px 5px;position:relative;
+    box-shadow:0 4px 10px -3px rgba(13,107,99,.6)}
+  .car .body::before{content:"";position:absolute;top:-11px;left:11px;width:26px;height:14px;
+    background:var(--teal);border-radius:7px 7px 0 0}
+  .car .win{position:absolute;top:-8px;left:15px;width:16px;height:8px;background:#cde7e2;border-radius:3px 3px 0 0}
+  .car .w{position:absolute;bottom:-5px;width:11px;height:11px;background:#221;border-radius:50%;border:2px solid #555}
+  .car .w1{left:6px}.car .w2{right:6px}
+  .start-flag{position:absolute;bottom:34%;left:14px;transform:translateY(0);
+    font-size:11px;font-family:"Space Mono",monospace;color:var(--muted);z-index:3}
+  .start-flag::before{content:"⚑";display:block;font-size:16px;color:var(--coral)}
+
+  /* ghost overlay */
+  #ghost{position:absolute;inset:0;z-index:5;pointer-events:none}
+  .ghost-note{position:absolute;top:10px;right:12px;max-width:200px;z-index:6;
+    background:var(--coral);color:#fff;border-radius:10px;padding:10px 12px;font-size:12px;line-height:1.4;
+    box-shadow:0 8px 20px -8px rgba(198,69,47,.7);opacity:0;transform:translateY(-6px);
+    transition:opacity .3s,transform .3s;pointer-events:none}
+  .ghost-note.show{opacity:1;transform:translateY(0)}
+
+  /* status strip */
+  .status{margin-top:14px;display:flex;align-items:center;gap:12px;min-height:46px;
+    background:#fff8;border:1px solid var(--line);border-radius:12px;padding:10px 14px}
+  .status .ic{font-size:20px;flex:none}
+  .status .txt{font-size:14px;font-weight:600;line-height:1.35}
+  .status.warn{border-color:var(--coral);background:#fdeee9}
+  .status.warn .txt{color:var(--coral)}
+
+  /* Graphs */
+  .formula{margin-top:12px;display:flex;justify-content:space-between;align-items:center;gap:8px;
+    background:#fff8;border:1px solid var(--line);border-radius:10px;padding:9px 13px;flex-wrap:wrap}
+  .formula .eq{font-family:"Space Mono",monospace;font-size:12px;color:var(--ink)}
+  .formula .live{font-family:"Space Mono",monospace;font-size:12px;color:var(--muted);white-space:nowrap}
+  .formula .live b{color:var(--ink);font-weight:700}
+  .graphs{display:flex;flex-direction:column;gap:18px}
+  .gwrap{position:relative;width:100%;aspect-ratio:16/9;min-height:150px}
+  canvas{width:100%;height:100%;display:block}
+
+  /* Controls */
+  .controls{margin-top:18px}
+  .scen{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
+  .scen button{
+    font-family:"Hanken Grotesk",sans-serif;font-weight:600;font-size:13.5px;
+    text-align:left;padding:11px 13px;border-radius:11px;border:1.5px solid var(--line);
+    background:#fff8;color:var(--ink);cursor:pointer;transition:all .15s;line-height:1.25}
+  .scen button small{display:block;font-weight:400;color:var(--muted);font-size:11px;margin-top:2px;font-family:"Space Mono",monospace}
+  .scen button:hover{border-color:var(--teal);transform:translateY(-1px)}
+  .scen button.active{background:var(--teal);color:#fff;border-color:var(--teal)}
+  .scen button.active small{color:#cde7e2}
+  .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  .btn{font-family:"Hanken Grotesk";font-weight:700;font-size:14px;padding:11px 20px;border-radius:11px;
+    border:none;cursor:pointer;transition:all .15s;display:inline-flex;align-items:center;gap:8px}
+  .btn-play{background:var(--ink);color:var(--paper)}
+  .btn-play:hover{transform:translateY(-1px)}
+  .btn-reset{background:transparent;color:var(--muted);border:1.5px solid var(--line)}
+  .btn-reset:hover{border-color:var(--muted)}
+  .btn-mis{background:#fff;color:var(--coral);border:1.5px solid var(--coral);margin-left:auto}
+  .btn-mis.on{background:var(--coral);color:#fff}
+  @media(max-width:520px){.btn-mis{margin-left:0;width:100%;justify-content:center}}
+
+  /* Quiz */
+  .quiz{margin-top:18px}
+  .q-num{font-family:"Space Mono",monospace;font-size:11px;letter-spacing:.1em;color:var(--muted);text-transform:uppercase;margin-bottom:10px}
+  .q-text{font-family:"Fraunces",serif;font-size:clamp(18px,3vw,22px);font-weight:600;line-height:1.3;margin-bottom:16px}
+  .opts{display:grid;gap:9px}
+  .opt{text-align:left;padding:13px 15px;border-radius:11px;border:1.5px solid var(--line);background:#fff8;
+    font-family:"Hanken Grotesk";font-size:14.5px;font-weight:500;cursor:pointer;transition:all .15s;color:var(--ink);line-height:1.3}
+  .opt:hover:not(:disabled){border-color:var(--teal);transform:translateY(-1px)}
+  .opt:disabled{cursor:default}
+  .opt.correct{background:#e6f4ec;border-color:#1f9d57;color:#16703f;font-weight:600}
+  .opt.wrong{background:#fdeae6;border-color:var(--coral);color:var(--coral);font-weight:600}
+  .fb{margin-top:14px;padding:13px 15px;border-radius:11px;font-size:13.5px;line-height:1.55;display:none}
+  .fb.show{display:block}
+  .fb.ok{background:#e6f4ec;color:#16703f;border:1px solid #1f9d57}
+  .fb.no{background:#fdeae6;color:var(--coral);border:1px solid var(--coral)}
+  .quiz-foot{margin-top:16px;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+  .score{font-family:"Space Mono",monospace;font-size:13px;color:var(--muted)}
+  .score b{color:var(--ink)}
+  footer{margin-top:30px;padding-top:18px;border-top:1px solid var(--line);
+    display:flex;justify-content:space-between;gap:14px;flex-wrap:wrap;
+    font-size:12.5px;color:var(--muted);font-family:"Space Mono",monospace}
+  footer b{color:var(--ink);font-weight:700}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="kicker">Form 4 Mathematics · Chapter 7: Graphs of Motion</div>
+    <h1>The graph is <em>not</em> a map of where the car goes.</h1>
+    <p class="sub">A distance-time graph shows how far the car is from its start — it is <b>not</b> a picture of the road. Drive the car along a flat, straight track and watch the graph rise and fall, even though the car never leaves the ground.</p>
+    <div class="obj">
+      <span class="tag">START HERE</span>
+      <span><b>A distance–time graph only tells you one thing: how far the car is from where it started, at each moment.</b> It is <b>not</b> a picture of the road. That's why the line can go up and down even though the car only drives left–right on flat ground. Lots of students read the graph like a map by mistake — drive the car below and catch the difference yourself. 👇</span>
+    </div>
+  </header>
+
+  <div class="grid">
+    <!-- LEFT: track + controls -->
+    <div class="card track-card">
+      <h2><span class="dot" style="background:var(--teal)"></span> The real motion (flat, straight track)</h2>
+      <div class="stage" id="stage">
+        <span class="sky-label">↑ this is the SKY — the car can't go here</span>
+        <div class="ground"></div>
+        <div class="ruler" id="ruler"></div>
+        <div class="start-flag">start</div>
+        <div class="car" id="car">
+          <div class="body"><span class="win"></span></div>
+          <span class="w w1"></span><span class="w w2"></span>
+        </div>
+        <canvas id="ghost"></canvas>
+        <div class="ghost-note" id="ghostNote">🤯 If the graph were a map, the car would fly up like this — impossible! Height on the graph really just means <b>distance from start</b>.</div>
+      </div>
+
+      <div class="status" id="status">
+        <span class="ic">🅿️</span>
+        <span class="txt">Pick a journey below, then press Play.</span>
+      </div>
+
+      <div class="controls">
+        <div class="scen" id="scen">
+          <button data-s="steady" class="active">Steady drive →<small>constant speed</small></button>
+          <button data-s="accel">Speeding up →<small>acceleration</small></button>
+          <button data-s="decel">Slowing down →<small>deceleration</small></button>
+          <button data-s="thereback">There &amp; back ↩<small>forward then reverse</small></button>
+          <button data-s="stopgo">Stop &amp; go ⏸<small>moves, pauses, moves</small></button>
+        </div>
+        <div class="row">
+          <button class="btn btn-play" id="play">▶ Play</button>
+          <button class="btn btn-reset" id="reset">↺ Reset</button>
+          <button class="btn btn-mis" id="mis">🤯 Show the common mistake</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT: graphs -->
+    <div class="graphs">
+      <div class="card">
+        <h2><span class="dot" style="background:var(--teal)"></span> Distance–time graph (d–t)</h2>
+        <div class="gwrap"><canvas id="dt"></canvas></div>
+        <div class="formula">
+          <span class="eq"><b style="color:var(--teal)">gradient</b> = speed = Δdistance ÷ Δtime</span>
+          <span class="live">now: <b id="dtLive">0.0</b> m/s</span>
+        </div>
+      </div>
+      <div class="card">
+        <h2><span class="dot" style="background:var(--amber)"></span> Velocity–time graph (v–t)</h2>
+        <div class="gwrap"><canvas id="vt"></canvas></div>
+        <div class="formula">
+          <span class="eq"><b style="color:var(--amber)">area</b> under graph = distance&nbsp; · &nbsp;gradient = acceleration</span>
+          <span class="live">distance: <b id="vtLive">0</b> m</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card quiz" id="quiz">
+    <h2><span class="dot" style="background:var(--coral)"></span> Quick check — can you spot the trap?</h2>
+    <div class="q-num" id="qNum">Question 1 of 3</div>
+    <div class="q-text" id="qText"></div>
+    <div class="opts" id="qOpts"></div>
+    <div class="fb" id="qFb"></div>
+    <div class="quiz-foot">
+      <span class="score">Score: <b id="qScore">0</b> / 3</span>
+      <button class="btn btn-play" id="qNext" style="display:none">Next →</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const T = 10;            // total seconds
+const DMAX = 100;        // metres (distance axis)
+const VMAX = 22;         // velocity axis (+/-)
+const css = getComputedStyle(document.documentElement);
+const C = {
+  ink: css.getPropertyValue('--ink').trim(),
+  muted: css.getPropertyValue('--muted').trim(),
+  line: css.getPropertyValue('--line').trim(),
+  teal: css.getPropertyValue('--teal').trim(),
+  amber: css.getPropertyValue('--amber').trim(),
+  coral: css.getPropertyValue('--coral').trim(),
+};
+
+/* ---- scenarios: return {pos (0-100), vel} at time t ---- */
+const scenarios = {
+  steady:    t => ({ pos: 9*t,                         vel: 9 }),
+  accel:     t => ({ pos: 0.9*t*t,                     vel: 1.8*t }),
+  decel:     t => ({ pos: 18*t - 0.9*t*t,              vel: Math.max(0, 18 - 1.8*t) }),
+  thereback: t => t<=5 ? ({pos:18*t, vel:18}) : ({pos:90-18*(t-5), vel:-18}),
+  stopgo:    t => {
+    if(t<3)  return {pos:15*t,        vel:15};
+    if(t<5)  return {pos:45,          vel:0};
+    if(t<8)  return {pos:45+15*(t-5), vel:15};
+    return {pos:90, vel:0};
+  }
+};
+let current = 'steady';
+
+/* ---- canvases ---- */
+function setupCanvas(cv){
+  const dpr = window.devicePixelRatio||1;
+  const r = cv.getBoundingClientRect();
+  cv.width = r.width*dpr; cv.height = r.height*dpr;
+  const ctx = cv.getContext('2d'); ctx.scale(dpr,dpr);
+  return {ctx, w:r.width, h:r.height};
+}
+let dt, vt, ghost;
+function initCanvases(){
+  dt = setupCanvas(document.getElementById('dt'));
+  vt = setupCanvas(document.getElementById('vt'));
+  const g = document.getElementById('ghost');
+  const dpr = window.devicePixelRatio||1;
+  const r = document.getElementById('stage').getBoundingClientRect();
+  g.width=r.width*dpr; g.height=r.height*dpr;
+  const gctx=g.getContext('2d'); gctx.scale(dpr,dpr);
+  ghost={ctx:gctx,w:r.width,h:r.height};
+}
+
+/* ---- graph drawing ---- */
+function drawAxes(o, yLabels, zeroLine){
+  const {ctx,w,h}=o, padL=42, padB=26, padT=12, padR=10;
+  const x0=padL, x1=w-padR, y0=h-padB, y1=padT;
+  ctx.clearRect(0,0,w,h);
+  // grid
+  ctx.strokeStyle=C.line; ctx.lineWidth=1; ctx.font='10px "Space Mono"'; ctx.fillStyle=C.muted;
+  yLabels.forEach(L=>{
+    const y=y1+(y0-y1)*(1-L.f);
+    ctx.beginPath();ctx.moveTo(x0,y);ctx.lineTo(x1,y);
+    ctx.globalAlpha=L.v===0&&zeroLine?.55:.5;ctx.stroke();ctx.globalAlpha=1;
+    ctx.textAlign='right';ctx.fillText(L.t,x0-6,y+3);
+  });
+  // axis lines
+  ctx.strokeStyle=C.ink;ctx.globalAlpha=.55;ctx.lineWidth=1.4;
+  ctx.beginPath();ctx.moveTo(x0,y1);ctx.lineTo(x0,y0);ctx.lineTo(x1,y0);ctx.stroke();ctx.globalAlpha=1;
+  // x labels
+  ctx.textAlign='center';
+  for(let s=0;s<=T;s+=2){const x=x0+(x1-x0)*(s/T);ctx.fillText(s+'s',x,y0+15);}
+  ctx.save();ctx.translate(12,(y0+y1)/2);ctx.rotate(-Math.PI/2);ctx.textAlign='center';
+  ctx.fillStyle=C.muted;ctx.fillText(o.axis,0,0);ctx.restore();
+  return {x0,x1,y0,y1};
+}
+function plot(o, fn, color, tNow){
+  o.axis = fn.axis;
+  const g = drawAxes(o, fn.labels, fn.zero);
+  const {x0,x1,y0,y1}=g;
+  ctx2 = o.ctx;
+  ctx2.strokeStyle=color;ctx2.lineWidth=2.6;ctx2.lineJoin='round';ctx2.beginPath();
+  let started=false;
+  for(let t=0;t<=tNow+0.0001;t+=0.04){
+    const val=fn.val(Math.min(t,T));
+    const x=x0+(x1-x0)*(Math.min(t,T)/T);
+    const y=y1+(y0-y1)*(1-fn.norm(val));
+    if(!started){ctx2.moveTo(x,y);started=true;}else ctx2.lineTo(x,y);
+  }
+  ctx2.stroke();
+  // moving dot
+  if(tNow>0){
+    const val=fn.val(Math.min(tNow,T));
+    const x=x0+(x1-x0)*(Math.min(tNow,T)/T);
+    const y=y1+(y0-y1)*(1-fn.norm(val));
+    ctx2.fillStyle=color;ctx2.beginPath();ctx2.arc(x,y,4.5,0,7);ctx2.fill();
+    ctx2.fillStyle='#fff';ctx2.beginPath();ctx2.arc(x,y,1.8,0,7);ctx2.fill();
+  }
+}
+const dtFn = {
+  axis:'distance (m)', zero:false,
+  labels:[{f:0,t:'0',v:0},{f:.5,t:'50',v:50},{f:1,t:'100',v:100}],
+  val:t=>scenarios[current](t).pos,
+  norm:v=>v/DMAX
+};
+const vtFn = {
+  axis:'velocity (m/s)', zero:true,
+  labels:[{f:1,t:'+20',v:20},{f:.5,t:'0',v:0},{f:0,t:'-20',v:-20}],
+  val:t=>scenarios[current](t).vel,
+  norm:v=>(v+VMAX)/(2*VMAX)
+};
+
+/* ---- ghost (the misconception visual) ---- */
+function drawGhost(tNow, on){
+  const {ctx,w,h}=ghost; ctx.clearRect(0,0,w,h);
+  if(!on) return;
+  const groundY=h*0.66, top=h*0.12, padX=24;
+  // full faint path: x=time, height=distance  (what the misconception implies)
+  ctx.strokeStyle=C.coral;ctx.setLineDash([5,5]);ctx.lineWidth=2;ctx.globalAlpha=.45;ctx.beginPath();
+  for(let t=0;t<=T;t+=0.05){
+    const pos=scenarios[current](t).pos;
+    const x=padX+(w-2*padX)*(t/T);
+    const y=groundY-(groundY-top)*(pos/DMAX);
+    if(t===0)ctx.moveTo(x,y);else ctx.lineTo(x,y);
+  }
+  ctx.stroke();ctx.setLineDash([]);ctx.globalAlpha=1;
+  // ghost car at current point
+  const pos=scenarios[current](Math.min(tNow,T)).pos;
+  const x=padX+(w-2*padX)*(Math.min(tNow,T)/T);
+  const y=groundY-(groundY-top)*(pos/DMAX);
+  ctx.globalAlpha=.85;ctx.fillStyle=C.coral;
+  ctx.beginPath();ctx.roundRect(x-16,y-9,32,16,5);ctx.fill();
+  ctx.fillStyle='#fff';ctx.font='11px "Space Mono"';ctx.textAlign='center';ctx.fillText('👻',x,y+4);
+  ctx.globalAlpha=1;
+}
+
+/* ---- car + ruler ---- */
+function placeCar(pos){
+  const stage=document.getElementById('stage');
+  const pad=24, usable=stage.clientWidth-2*pad;
+  document.getElementById('car').style.left=(pad+usable*(pos/DMAX))+'px';
+}
+function buildRuler(){
+  const r=document.getElementById('ruler');r.innerHTML='';
+  [0,25,50,75,100].forEach(m=>{const s=document.createElement('span');s.textContent=m+'m';r.appendChild(s);});
+}
+
+/* ---- status messaging ---- */
+let prevVel=0;
+function setStatus(vel, accel){
+  const el=document.getElementById('status');
+  const ic=el.querySelector('.ic'), tx=el.querySelector('.txt');
+  el.classList.remove('warn');
+  if(Math.abs(vel)<0.3){ic.textContent='🛑';tx.textContent='Stopped — the car is not moving, so the d–t line stays flat (level).';}
+  else if(vel<0){
+    ic.textContent='↩️';tx.textContent='Moving BACK toward the start — the line goes DOWN, but the car is NOT going downward!';
+    el.classList.add('warn');
+  }
+  else if(accel>0.5){ic.textContent='🚀';tx.textContent='Speeding up — the d–t line curves and gets steeper.';}
+  else {ic.textContent='🚗';tx.textContent='Steady forward — the d–t line is a straight slope.';}
+}
+
+/* ---- animation loop ---- */
+let playing=false, startTs=0, tNow=0, misOn=false;
+function frame(ts){
+  if(!startTs)startTs=ts;
+  tNow=(ts-startTs)/1000;
+  if(tNow>=T){tNow=T;playing=false;}
+  render();
+  if(playing)requestAnimationFrame(frame);
+  else document.getElementById('play').textContent='▶ Play';
+}
+function render(){
+  const {pos,vel}=scenarios[current](Math.min(tNow,T));
+  placeCar(pos);
+  plot(dt,dtFn,C.teal,tNow);
+  plot(vt,vtFn,C.amber,tNow);
+  drawGhost(tNow,misOn);
+  document.getElementById('dtLive').textContent=vel.toFixed(1);
+  document.getElementById('vtLive').textContent=Math.round(pos);
+  const accel=vel-prevVel; prevVel=vel;
+  setStatus(vel,accel);
+  // ghost note + reverse warning highlight
+  const note=document.getElementById('ghostNote');
+  if(misOn && tNow>0.3) note.classList.add('show'); else note.classList.remove('show');
+}
+
+/* ---- controls ---- */
+function reset(){playing=false;startTs=0;tNow=0;prevVel=0;render();
+  document.getElementById('play').textContent='▶ Play';
+  const el=document.getElementById('status');el.classList.remove('warn');
+  el.querySelector('.ic').textContent='🅿️';
+  el.querySelector('.txt').textContent='Press Play to start the journey.';
+}
+document.getElementById('play').addEventListener('click',()=>{
+  if(playing){playing=false;return;}
+  if(tNow>=T)reset();
+  playing=true;startTs=0;
+  document.getElementById('play').textContent='⏸ Pause';
+  requestAnimationFrame(frame);
+});
+document.getElementById('reset').addEventListener('click',reset);
+document.getElementById('mis').addEventListener('click',e=>{
+  misOn=!misOn;e.currentTarget.classList.toggle('on',misOn);
+  e.currentTarget.textContent=misOn?'✓ Mistake view ON':'🤯 Show the common mistake';
+  if(misOn && current!=='thereback'){
+    // there&back shows it most dramatically — nudge selection
+  }
+  render();
+});
+document.querySelectorAll('#scen button').forEach(b=>{
+  b.addEventListener('click',()=>{
+    document.querySelectorAll('#scen button').forEach(x=>x.classList.remove('active'));
+    b.classList.add('active');current=b.dataset.s;reset();
+  });
+});
+
+window.addEventListener('resize',()=>{initCanvases();buildRuler();render();});
+initCanvases();buildRuler();reset();
+
+/* ---- quiz (targets the misconception + sets up the LA layer) ---- */
+const QUIZ=[
+ {q:"On a distance–time graph, the line slopes DOWNWARD. What is the car doing?",
+  o:["Driving downhill","Moving back toward the start","Speeding up","Parked / stopped"],a:1,
+  ok:"A downward line means the car is getting closer to its start. The graph is not a picture of the road.",
+  no:"This is the classic trap. The graph isn't a map of the road — a downward line just means distance from start is decreasing, so the car is heading back."},
+ {q:"A distance–time graph is a flat, HORIZONTAL line. What does this tell us?",
+  o:["The car moves at a steady speed","The car is stopped","The car is reversing","The road is flat"],a:1,
+  ok:"Zero gradient = no change in distance over time = the car is stopped.",
+  no:"Check the gradient — it's zero. No change in distance means the car isn't moving. A flat line is a stopped car, not a cruising one."},
+ {q:"On a velocity–time graph, the line slopes downward but stays ABOVE zero. The car is…",
+  o:["Reversing","Slowing down (decelerating)","Stopped","Going downhill"],a:1,
+  ok:"Velocity is still positive, so it's still moving forward — the negative gradient means it's decelerating.",
+  no:"Velocity is still above zero, so the car is still moving forward. The downward slope means it's slowing down (deceleration), not reversing."}
+];
+let qi=0,qScore=0,answered=false;
+function showQ(){
+ const Q=QUIZ[qi];answered=false;
+ document.getElementById('qNum').textContent='Question '+(qi+1)+' of '+QUIZ.length;
+ document.getElementById('qText').textContent=Q.q;
+ const opts=document.getElementById('qOpts');opts.innerHTML='';
+ Q.o.forEach((t,i)=>{const b=document.createElement('button');b.className='opt';b.textContent=t;
+   b.addEventListener('click',()=>pick(i,b));opts.appendChild(b);});
+ document.getElementById('qFb').className='fb';
+ document.getElementById('qNext').style.display='none';
+}
+function pick(i,btn){
+ if(answered)return;answered=true;
+ const Q=QUIZ[qi],opts=[...document.getElementById('qOpts').children],fb=document.getElementById('qFb');
+ opts.forEach((b,j)=>{b.disabled=true;if(j===Q.a)b.classList.add('correct');});
+ if(i===Q.a){qScore++;document.getElementById('qScore').textContent=qScore;fb.className='fb ok show';fb.textContent='✓ '+Q.ok;}
+ else{btn.classList.add('wrong');fb.className='fb no show';fb.textContent='✗ '+Q.no;}
+ const next=document.getElementById('qNext');next.style.display='inline-flex';
+ next.textContent=qi<QUIZ.length-1?'Next →':'See result';
+}
+document.getElementById('qNext').addEventListener('click',()=>{
+ if(qi<QUIZ.length-1){qi++;showQ();}
+ else{
+   const fb=document.getElementById('qFb');
+   document.getElementById('qNum').textContent='Result';
+   document.getElementById('qText').textContent='You scored '+qScore+' / '+QUIZ.length;
+   document.getElementById('qOpts').innerHTML='';
+   fb.className='fb ok show';
+   fb.textContent=qScore===3?'🎉 Perfect — you read every graph by its gradient, not as a picture of the road.':'Good effort! The key idea: a distance–time graph shows distance from the start, not the path the car drives.';
+   document.getElementById('qNext').style.display='none';
+   const sc=document.querySelector('.score');if(sc)sc.style.display='none';
+ }
+});
+showQ();
+</script>
+</body>
+</html>

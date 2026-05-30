@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Learning Analytics — Graph of Motion</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,900&family=Hanken+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#f4efe6;--paper-2:#efe8db;--ink:#211c16;--muted:#736a5c;--line:#d8cfbe;
+    --teal:#0d6b63;--amber:#cf7a17;--coral:#c6452f;--gold:#d9a441;--green:#1f9d57;
+    --shadow:0 1px 0 #fff inset, 0 10px 30px -12px rgba(33,28,22,.35);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--paper);color:var(--ink);font-family:"Hanken Grotesk",sans-serif;
+    -webkit-font-smoothing:antialiased;line-height:1.5;
+    background-image:radial-gradient(rgba(33,28,22,.035) 1px,transparent 1px);background-size:22px 22px;
+    padding:clamp(16px,3.5vw,48px) clamp(14px,3vw,40px)}
+  .wrap{max-width:980px;margin:0 auto}
+
+  .kicker{font-family:"Space Mono",monospace;font-size:12px;letter-spacing:.18em;text-transform:uppercase;
+    color:var(--teal);font-weight:700;margin-bottom:12px;display:flex;align-items:center;gap:10px}
+  .kicker::before{content:"";width:34px;height:2px;background:var(--teal)}
+  h1{font-family:"Fraunces",serif;font-weight:900;line-height:1.05;font-size:clamp(28px,5vw,46px);letter-spacing:-.02em;max-width:18ch}
+  .topbar{display:flex;justify-content:space-between;align-items:flex-end;gap:18px;flex-wrap:wrap;margin-top:20px}
+  .selector label{font-family:"Space Mono",monospace;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:6px}
+  select{font-family:"Hanken Grotesk";font-weight:600;font-size:15px;padding:10px 38px 10px 14px;border-radius:11px;
+    border:1.5px solid var(--line);background:var(--paper-2);color:var(--ink);cursor:pointer;
+    appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M2 4l4 4 4-4' stroke='%23736a5c' stroke-width='1.6' fill='none'/%3E%3C/svg%3E");
+    background-repeat:no-repeat;background-position:right 13px center}
+
+  /* stat cards */
+  .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:24px}
+  @media(max-width:560px){.stats{grid-template-columns:1fr}}
+  .stat{background:var(--paper-2);border:1px solid var(--line);border-radius:16px;padding:18px 20px;box-shadow:var(--shadow)}
+  .stat .v{font-family:"Fraunces",serif;font-weight:900;font-size:clamp(30px,5vw,42px);line-height:1;letter-spacing:-.02em}
+  .stat .l{font-size:13px;color:var(--muted);margin-top:8px}
+  .stat .v small{font-size:.5em;font-weight:600;color:var(--muted)}
+
+  /* headline insight */
+  .insight{margin-top:18px;background:var(--ink);color:var(--paper);border-radius:20px;padding:clamp(22px,3.5vw,32px);position:relative;overflow:hidden}
+  .insight::after{content:"";position:absolute;right:-40px;top:-40px;width:180px;height:180px;border-radius:50%;background:rgba(217,164,65,.12)}
+  .insight .tag{font-family:"Space Mono",monospace;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);font-weight:700;margin-bottom:12px}
+  .insight h2{font-family:"Fraunces",serif;font-weight:600;font-size:clamp(21px,3.4vw,28px);line-height:1.25;margin-bottom:6px;position:relative;z-index:1}
+  .insight h2 b{color:var(--gold)}
+  .insight .pct{font-family:"Fraunces",serif;font-weight:900;color:var(--gold)}
+  .insight .action{margin-top:16px;padding-top:16px;border-top:1px solid rgba(244,239,230,.18);display:flex;gap:12px;align-items:flex-start;font-size:15px;color:#e3dccc;line-height:1.5;position:relative;z-index:1}
+  .insight .action .lab{font-family:"Space Mono",monospace;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--gold);font-weight:700;white-space:nowrap;margin-top:2px}
+
+  /* generic card */
+  .card{background:var(--paper-2);border:1px solid var(--line);border-radius:18px;padding:clamp(18px,3vw,24px);box-shadow:var(--shadow);margin-top:18px}
+  .card h3{font-family:"Space Mono",monospace;font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:700;margin-bottom:4px}
+  .card .desc{font-size:13.5px;color:var(--muted);margin-bottom:18px}
+
+  /* prevalence bars */
+  .pbar{margin-bottom:16px}
+  .pbar:last-child{margin-bottom:0}
+  .pbar .top{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:7px;gap:12px}
+  .pbar .nm{font-weight:600;font-size:14.5px}
+  .pbar .nm small{display:block;font-family:"Space Mono",monospace;font-size:11px;color:var(--muted);font-weight:400;margin-top:1px}
+  .pbar .pc{font-family:"Space Mono",monospace;font-weight:700;font-size:15px}
+  .track{height:14px;background:#e3dac9;border-radius:7px;overflow:hidden}
+  .fill{height:100%;border-radius:7px;background:var(--coral);transition:width .6s cubic-bezier(.2,.7,.2,1)}
+  .pbar.top1 .pc{color:var(--coral)}
+  .pbar:not(.top1) .fill{background:#b9a98c}
+  .pbar:not(.top1) .pc{color:var(--muted)}
+
+  /* question breakdown */
+  .qrow{margin-bottom:20px}
+  .qrow:last-child{margin-bottom:0}
+  .qrow .qh{display:flex;justify-content:space-between;gap:12px;align-items:baseline;margin-bottom:8px}
+  .qrow .qt{font-weight:600;font-size:14.5px}
+  .qrow .qt span{font-family:"Space Mono",monospace;color:var(--muted);font-size:12px;margin-right:8px}
+  .qrow .qc{font-family:"Space Mono",monospace;font-size:13px;color:var(--green);font-weight:700}
+  .stack{display:flex;height:30px;border-radius:8px;overflow:hidden;background:#e3dac9}
+  .seg{height:100%;display:flex;align-items:center;justify-content:center;font-family:"Space Mono",monospace;
+    font-size:11px;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;transition:width .6s cubic-bezier(.2,.7,.2,1)}
+  .seg.correct{background:var(--teal)}
+  .seg.mis{background:var(--coral)}
+  .seg.other{background:#b9a98c}
+  .qlegend{display:flex;gap:16px;flex-wrap:wrap;margin-top:9px;font-size:12px;color:var(--muted)}
+  .qlegend span{display:flex;align-items:center;gap:6px}
+  .qlegend i{width:11px;height:11px;border-radius:3px;display:inline-block}
+
+  /* heatmap */
+  .hmscroll{overflow-x:auto;padding-bottom:6px}
+  .hm{display:grid;gap:3px;min-width:max-content}
+  .hm .rowlab{font-family:"Space Mono",monospace;font-size:11px;color:var(--muted);display:flex;align-items:center;padding-right:10px;white-space:nowrap}
+  .cell{width:15px;height:15px;border-radius:3px}
+  .cell.ok{background:var(--teal)}
+  .cell.no{background:var(--coral);opacity:.85}
+  .hmleg{display:flex;gap:16px;margin-top:14px;font-size:12px;color:var(--muted)}
+  .hmleg span{display:flex;align-items:center;gap:6px}
+  .hmleg i{width:12px;height:12px;border-radius:3px}
+
+  .note{margin-top:24px;font-family:"Space Mono",monospace;font-size:11.5px;color:var(--muted);line-height:1.6;
+    border-top:1px solid var(--line);padding-top:16px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="kicker">Learning Analytics · Concept Mockup</div>
+  <h1>Which misconception is holding the class back?</h1>
+
+  <div class="topbar">
+    <p style="max-width:48ch;color:var(--muted);font-size:15px">The quiz in the learning object isn't just a score — every wrong answer maps to a named misconception. Aggregated, it tells a teacher exactly what to reteach first.</p>
+    <div class="selector">
+      <label for="cls">Viewing class</label>
+      <select id="cls"></select>
+    </div>
+  </div>
+
+  <div class="stats" id="stats"></div>
+
+  <div class="insight" id="insight"></div>
+
+  <div class="card">
+    <h3>Misconception prevalence</h3>
+    <div class="desc">Share of the class whose answers reveal each misconception. The most common one is what to address first.</div>
+    <div id="prev"></div>
+  </div>
+
+  <div class="card">
+    <h3>Per-question breakdown</h3>
+    <div class="desc">How answers split on each item. The coral band is the distractor designed to catch a specific misconception.</div>
+    <div id="ques"></div>
+  </div>
+
+  <div class="card">
+    <h3>Student-level view</h3>
+    <div class="desc">Each column is one student. Useful for spotting who needs follow-up, not just the class average.</div>
+    <div class="hmscroll"><div class="hm" id="hm"></div></div>
+    <div class="hmleg">
+      <span><i style="background:var(--teal)"></i> Correct</span>
+      <span><i style="background:var(--coral);opacity:.85"></i> Incorrect</span>
+    </div>
+  </div>
+
+  <p class="note">Data shown is simulated to demonstrate the design. In production, this dashboard populates directly from learners' quiz responses in the interactive object — closing the loop from lesson → assessment → the teacher's next move.</p>
+
+</div>
+
+<script>
+/* ---- named misconceptions (tied to the 3 quiz items) ---- */
+const MIS = {
+  M1:{name:'Reads the graph as a map of the road', short:'a falling line ≠ "going downhill"',
+      action:'Re-run the "There & back" scenario and pause on the falling line. Make the "a graph is not a map" point explicit before moving on.'},
+  M2:{name:'Confuses "stopped" with "steady speed"', short:'a flat line ≠ "cruising"',
+      action:'Focus on the flat-line case: zero gradient means stopped. Put a flat line and a gentle slope side by side.'},
+  M3:{name:'Confuses decelerating with reversing', short:'slowing down ≠ "going backward"',
+      action:'Run "Slowing down" then "There & back" back to back, so students see that positive-but-falling velocity is still moving forward.'}
+};
+
+/* ---- simulated class data ---- */
+const CLASSES = {
+  cerdas:{name:'4 Cerdas', students:32, seed:7,
+    q:[{q:'Q1',text:'Falling d–t line',correct:38,mis:'M1',misPct:47},
+       {q:'Q2',text:'Flat d–t line',correct:69,mis:'M2',misPct:19},
+       {q:'Q3',text:'Falling v–t, still positive',correct:56,mis:'M3',misPct:31}]},
+  bestari:{name:'4 Bestari', students:29, seed:21,
+    q:[{q:'Q1',text:'Falling d–t line',correct:72,mis:'M1',misPct:18},
+       {q:'Q2',text:'Flat d–t line',correct:66,mis:'M2',misPct:22},
+       {q:'Q3',text:'Falling v–t, still positive',correct:41,mis:'M3',misPct:45}]},
+  dinamik:{name:'4 Dinamik', students:34, seed:42,
+    q:[{q:'Q1',text:'Falling d–t line',correct:79,mis:'M1',misPct:12},
+       {q:'Q2',text:'Flat d–t line',correct:58,mis:'M2',misPct:30},
+       {q:'Q3',text:'Falling v–t, still positive',correct:74,mis:'M3',misPct:17}]}
+};
+
+/* seeded PRNG for a stable student grid */
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+function buildGrid(cls){
+  const rnd=mulberry32(cls.seed);const N=cls.students;
+  // matrix[q][student] = true/false correct, generated from each q's correct%
+  return cls.q.map(q=>Array.from({length:N},()=>rnd()*100<q.correct));
+}
+
+function render(key){
+  const cls=CLASSES[key];
+  const grid=buildGrid(cls);
+  const N=cls.students;
+
+  // derived stats from the grid (so heatmap & numbers always agree)
+  let correctCells=0;cls.q.forEach((_,i)=>grid[i].forEach(c=>{if(c)correctCells++}));
+  const avg=Math.round(correctCells/(N*3)*100);
+  let mastered=0;for(let s=0;s<N;s++){if(grid.every(row=>row[s]))mastered++;}
+
+  document.getElementById('stats').innerHTML=
+    `<div class="stat"><div class="v">${N}</div><div class="l">students assessed</div></div>
+     <div class="stat"><div class="v">${avg}<small>%</small></div><div class="l">average score</div></div>
+     <div class="stat"><div class="v">${mastered}<small>/${N}</small></div><div class="l">mastered all three</div></div>`;
+
+  // prevalence (sorted desc)
+  const prev=cls.q.map(q=>({key:q.mis,pct:q.misPct,...MIS[q.mis]})).sort((a,b)=>b.pct-a.pct);
+  const top=prev[0];
+  document.getElementById('prev').innerHTML=prev.map((p,i)=>
+    `<div class="pbar ${i===0?'top1':''}">
+       <div class="top"><div class="nm">${p.name}<small>${p.short}</small></div><div class="pc">${p.pct}%</div></div>
+       <div class="track"><div class="fill" style="width:0%" data-w="${p.pct}"></div></div>
+     </div>`).join('');
+
+  // headline insight
+  document.getElementById('insight').innerHTML=
+    `<div class="tag">Headline insight · ${cls.name}</div>
+     <h2>The most common misconception is <b>"${top.name}"</b> — present in <span class="pct">${top.pct}%</span> of the class.</h2>
+     <div class="action"><span class="lab">Reteach first</span><span>${top.action}</span></div>`;
+
+  // per-question
+  document.getElementById('ques').innerHTML=cls.q.map(q=>{
+    const other=100-q.correct-q.misPct;
+    const m=MIS[q.mis];
+    return `<div class="qrow">
+      <div class="qh"><div class="qt"><span>${q.q}</span>${q.text}</div><div class="qc">${q.correct}% correct</div></div>
+      <div class="stack">
+        <div class="seg correct" style="width:0%" data-w="${q.correct}">${q.correct>9?q.correct+'%':''}</div>
+        <div class="seg mis" style="width:0%" data-w="${q.misPct}">${q.misPct>9?q.misPct+'%':''}</div>
+        <div class="seg other" style="width:0%" data-w="${other}">${other>9?other+'%':''}</div>
+      </div>
+      <div class="qlegend">
+        <span><i style="background:var(--teal)"></i> Correct</span>
+        <span><i style="background:var(--coral)"></i> "${m.short}" (${q.mis})</span>
+        <span><i style="background:#b9a98c"></i> Other</span>
+      </div>
+    </div>`;
+  }).join('');
+
+  // heatmap (rows = questions, cols = students)
+  const hm=document.getElementById('hm');
+  hm.style.gridTemplateColumns=`auto repeat(${N},15px)`;
+  let html='';
+  cls.q.forEach((q,i)=>{
+    html+=`<div class="rowlab">${q.q}</div>`;
+    for(let s=0;s<N;s++) html+=`<div class="cell ${grid[i][s]?'ok':'no'}"></div>`;
+  });
+  hm.innerHTML=html;
+
+  // animate bars
+  requestAnimationFrame(()=>{requestAnimationFrame(()=>{
+    document.querySelectorAll('.fill,.seg').forEach(el=>{el.style.width=el.dataset.w+'%';});
+  });});
+}
+
+/* init */
+const sel=document.getElementById('cls');
+Object.entries(CLASSES).forEach(([k,c])=>{const o=document.createElement('option');o.value=k;o.textContent=c.name;sel.appendChild(o);});
+sel.addEventListener('change',e=>render(e.target.value));
+render('cerdas');
+</script>
+</body>
+</html>

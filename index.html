@@ -1,0 +1,994 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Case Study — Graph of Motion Interactive</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,900&family=Hanken+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#f4efe6;--paper-2:#efe8db;--ink:#211c16;--muted:#736a5c;--line:#d8cfbe;
+    --teal:#0d6b63;--amber:#cf7a17;--coral:#c6452f;--gold:#d9a441;
+    --shadow:0 1px 0 #fff inset, 0 10px 30px -12px rgba(33,28,22,.35);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{
+    background:var(--paper);color:var(--ink);font-family:"Hanken Grotesk",sans-serif;
+    -webkit-font-smoothing:antialiased;line-height:1.6;
+    background-image:radial-gradient(rgba(33,28,22,.035) 1px,transparent 1px);
+    background-size:22px 22px;padding:clamp(16px,4vw,56px) clamp(14px,3vw,40px);
+  }
+  .wrap{max-width:860px;margin:0 auto}
+
+  /* hero */
+  .kicker{font-family:"Space Mono",monospace;font-size:12px;letter-spacing:.18em;text-transform:uppercase;
+    color:var(--teal);font-weight:700;margin-bottom:14px;display:flex;align-items:center;gap:10px}
+  .kicker::before{content:"";width:34px;height:2px;background:var(--teal)}
+  h1{font-family:"Fraunces",serif;font-weight:900;line-height:1.04;
+    font-size:clamp(32px,6.5vw,60px);letter-spacing:-.02em;max-width:15ch}
+  h1 em{font-style:italic;color:var(--teal)}
+  .lead{margin-top:18px;font-size:clamp(16px,2.4vw,19px);color:var(--muted);max-width:62ch;line-height:1.55}
+
+  /* meta strip */
+  .meta{margin-top:30px;display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));
+    gap:1px;background:var(--line);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+  .meta div{background:var(--paper-2);padding:14px 16px}
+  .meta dt{font-family:"Space Mono",monospace;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:5px}
+  .meta dd{font-size:13.5px;font-weight:600;line-height:1.35}
+
+  /* sections */
+  section{margin-top:48px}
+  .sec-label{font-family:"Space Mono",monospace;font-size:12px;letter-spacing:.14em;text-transform:uppercase;
+    color:var(--coral);font-weight:700;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+  .sec-label .n{width:24px;height:24px;border-radius:50%;background:var(--coral);color:#fff;
+    display:grid;place-items:center;font-size:12px}
+  h2{font-family:"Fraunces",serif;font-weight:600;font-size:clamp(24px,4vw,34px);line-height:1.15;
+    letter-spacing:-.01em;margin-bottom:18px}
+  p{font-size:16.5px;margin-bottom:16px;max-width:64ch}
+  p b{color:var(--ink)}
+  .pull{font-family:"Fraunces",serif;font-style:italic;font-size:clamp(19px,3vw,24px);line-height:1.4;
+    color:var(--teal);border-left:3px solid var(--teal);padding:6px 0 6px 20px;margin:22px 0;max-width:60ch}
+
+  /* design decisions */
+  .decisions{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:8px}
+  @media(max-width:640px){.decisions{grid-template-columns:1fr}}
+  .dcard{background:var(--paper-2);border:1px solid var(--line);border-radius:14px;padding:18px;box-shadow:var(--shadow)}
+  .dcard h3{font-family:"Hanken Grotesk";font-size:15.5px;font-weight:700;margin-bottom:7px;display:flex;gap:8px;align-items:baseline}
+  .dcard h3 .ic{font-size:17px}
+  .dcard p{font-size:14px;color:var(--muted);margin:0;line-height:1.5}
+  .dcard p b{color:var(--ink)}
+
+  /* mapping list */
+  .map{background:var(--paper-2);border:1px solid var(--line);border-radius:14px;overflow:hidden;margin-top:6px}
+  .map .row{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--line)}
+  .map .row>div{background:var(--paper-2);padding:13px 16px;font-size:14px}
+  .map .row.h>div{font-family:"Space Mono",monospace;font-size:10.5px;letter-spacing:.1em;
+    text-transform:uppercase;color:var(--muted);font-weight:700}
+  .map .ans{color:var(--coral);font-weight:600}
+
+  /* transferable band */
+  .band{margin-top:48px;background:var(--ink);color:var(--paper);border-radius:20px;padding:clamp(24px,4vw,38px)}
+  .band .sec-label{color:var(--gold)}.band .sec-label .n{background:var(--gold);color:var(--ink)}
+  .band h2{color:var(--paper)}
+  .band p{color:#d8cfbe}
+  .steps{display:grid;gap:10px;margin-top:18px;counter-reset:s}
+  .steps li{list-style:none;display:flex;gap:14px;align-items:baseline;font-size:15.5px;line-height:1.45}
+  .steps li::before{counter-increment:s;content:counter(s);font-family:"Space Mono";font-size:12px;font-weight:700;
+    color:var(--ink);background:var(--gold);width:24px;height:24px;border-radius:50%;display:grid;place-items:center;flex:none}
+  .steps li b{color:#fff}
+
+  /* demo embed */
+  .demo-cta{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;
+    background:var(--paper-2);border:1px solid var(--line);border-radius:14px;padding:18px 20px;margin-bottom:14px}
+  .demo-cta .t{font-family:"Fraunces",serif;font-size:18px;font-weight:600}
+  .demo-cta .t small{display:block;font-family:"Hanken Grotesk";font-size:13px;color:var(--muted);font-weight:400;margin-top:2px}
+  .launch{font-family:"Hanken Grotesk";font-weight:700;font-size:14px;padding:12px 22px;border-radius:11px;
+    background:var(--ink);color:var(--paper);text-decoration:none;white-space:nowrap;transition:transform .15s}
+  .launch:hover{transform:translateY(-1px)}
+  .frame{border:1px solid var(--line);border-radius:16px;overflow:hidden;box-shadow:var(--shadow);background:var(--paper-2)}
+  .frame iframe{width:100%;height:760px;border:0;display:block;background:var(--paper)}
+
+  /* next steps */
+  .next{display:grid;gap:10px}
+  .next li{list-style:none;background:var(--paper-2);border:1px solid var(--line);border-radius:12px;
+    padding:14px 16px;font-size:15px;display:flex;gap:11px;align-items:baseline}
+  .next li .ar{color:var(--teal);font-weight:700;flex:none}
+
+  hr{border:0;border-top:1px solid var(--line);margin:50px 0 0}
+  .foot{margin-top:22px;font-family:"Space Mono",monospace;font-size:12.5px;color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="kicker">Case Study · Instructional Design</div>
+  <h1>Teaching that a graph is <em>not</em> a map.</h1>
+  <p class="lead">An interactive learning object that targets one specific, stubborn misconception in Form 4 Mathematics — and is built to check whether the misconception actually shifted.</p>
+
+  <dl class="meta">
+    <div><dt>Role</dt><dd>Instructional Designer — concept, design &amp; build</dd></div>
+    <div><dt>Subject</dt><dd>Form 4 Maths · Ch.7 Graphs of Motion</dd></div>
+    <div><dt>Learners</dt><dd>~16-year-old students</dd></div>
+    <div><dt>Format</dt><dd>Interactive object + diagnostic quiz</dd></div>
+    <div><dt>Built with</dt><dd>HTML / CSS / JS · ADDIE</dd></div>
+  </dl>
+
+  <!-- 1 PROBLEM -->
+  <section>
+    <div class="sec-label"><span class="n">1</span> The problem</div>
+    <h2>Students read the line as the road.</h2>
+    <p>Ask a Form 4 class to describe the journey on a distance–time graph and a predictable thing happens: many describe the <b>shape of the line</b> as if it were the road itself. A line sloping up becomes "driving uphill"; a line sloping down becomes "going downhill" or "going faster".</p>
+    <p>The root issue isn't carelessness — it's a <b>mental model</b>. Students treat the graph as a picture of the path, not as a record of <b>distance from the start over time</b>. Until that model is corrected, the core of Chapter 7 — gradient as speed, area as distance — never quite lands.</p>
+    <p class="pull">So I stopped thinking of it as "a lesson on graphs of motion" and started thinking of it as going after one specific wrong idea — and the rest of the design followed from that.</p>
+  </section>
+
+  <!-- 2 APPROACH -->
+  <section>
+    <div class="sec-label"><span class="n">2</span> Design approach</div>
+    <h2>Every decision exists to make the wrong model visible — then break it.</h2>
+    <p>My first instinct was to just embed an existing GeoGebra simulation — there are good ones, and I’d used one in my own coursework. But that’s exactly where the problem showed up: it was too open. Students dragged the sliders, made a nice-looking graph, and never actually ran into the misconception. An open sandbox lets you slide right past the hard idea.</p>
+    <p>So instead of a free playground, I built something narrower — every scenario is chosen to put the wrong model under pressure. I worked through ADDIE, but a few decisions did the real heavy lifting:</p>
+    <div class="decisions">
+      <div class="dcard"><h3>A flat, straight track — on purpose</h3><p>The car only ever moves left–right, but the graph moves up and down. <b>That contradiction is the whole point.</b></p></div>
+      <div class="dcard"><h3>Two graphs, drawn live</h3><p>d–t and v–t build in real time as the car moves, so students meet <b>gradient-as-speed and area-as-distance</b> attached to something moving — not as separate formulas.</p></div>
+      <div class="dcard"><h3>Feedback the moment it goes wrong</h3><p>When the car reverses, the line falls — the exact spot students say "going down". A prompt <b>calls out the trap right there</b>, not afterward.</p></div>
+      <div class="dcard"><h3>A view of the mistake itself</h3><p>One toggle shows what the graph would mean if it really were a map: the car lifts off the ground and flies. <b>Letting the wrong idea fail</b> does more than telling students it's wrong.</p></div>
+      <div class="dcard"><h3>Formulas tied to live numbers</h3><p>The Chapter 7 relationships update as the car moves, so the symbols stay <b>attached to something the student can see.</b></p></div>
+      <div class="dcard"><h3>A quiz where the wrong answers are the misconceptions</h3><p>Each distractor is a specific error students actually make — so a wrong answer tells me <b>which idea to fix</b>, not just that they missed it.</p></div>
+    </div>
+  </section>
+
+  <!-- 3 SOLUTION / DEMO -->
+  <section>
+    <div class="sec-label"><span class="n">3</span> The solution</div>
+    <h2>Drive it yourself.</h2>
+    <p>The learner picks a journey, presses play, and watches the car and both graphs move together. The strongest moment is "There &amp; back": the car returns to start, the line clearly falls, and the live prompt catches the instinct to say "going down".</p>
+    <div class="demo-cta">
+      <div class="t">Interactive demo<small>Best viewed full-screen. Try "There &amp; back" + the 🤯 mistake view.</small></div>
+      <button class="launch" id="openDemo" type="button">▶ Open full demo</button>
+    </div>
+    <div class="frame"><iframe id="demoFrame" srcdoc="<!DOCTYPE html>
+<html lang=&quot;en&quot;>
+<head>
+<meta charset=&quot;UTF-8&quot;>
+<meta name=&quot;viewport&quot; content=&quot;width=device-width, initial-scale=1.0&quot;>
+<title>Graph of Motion — Interactive Demo</title>
+<link rel=&quot;preconnect&quot; href=&quot;https://fonts.googleapis.com&quot;>
+<link rel=&quot;preconnect&quot; href=&quot;https://fonts.gstatic.com&quot; crossorigin>
+<link href=&quot;https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,900&amp;family=Hanken+Grotesk:wght@400;500;600;700&amp;family=Space+Mono:wght@400;700&amp;display=swap&quot; rel=&quot;stylesheet&quot;>
+<style>
+  :root{
+    --paper:#f4efe6;
+    --paper-2:#efe8db;
+    --ink:#211c16;
+    --muted:#736a5c;
+    --line:#d8cfbe;
+    --teal:#0d6b63;      /* distance-time */
+    --amber:#cf7a17;     /* velocity-time */
+    --coral:#c6452f;     /* misconception */
+    --gold:#d9a441;
+    --shadow:0 1px 0 #fff inset, 0 10px 30px -12px rgba(33,28,22,.35);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{background:var(--paper);color:var(--ink);font-family:&quot;Hanken Grotesk&quot;,sans-serif;-webkit-font-smoothing:antialiased}
+  body{
+    background-image:radial-gradient(rgba(33,28,22,.035) 1px,transparent 1px);
+    background-size:22px 22px;
+    padding:clamp(14px,3vw,40px);
+    min-height:100vh;
+  }
+  .wrap{max-width:1120px;margin:0 auto}
+
+  /* Header */
+  header{margin-bottom:22px}
+  .kicker{
+    font-family:&quot;Space Mono&quot;,monospace;font-size:12px;letter-spacing:.18em;
+    text-transform:uppercase;color:var(--teal);font-weight:700;margin-bottom:10px;
+    display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+  }
+  .kicker::before{content:&quot;&quot;;width:34px;height:2px;background:var(--teal);display:inline-block}
+  h1{
+    font-family:&quot;Fraunces&quot;,serif;font-weight:900;line-height:1.02;
+    font-size:clamp(30px,6vw,58px);letter-spacing:-.02em;max-width:16ch;
+  }
+  h1 em{font-style:italic;color:var(--teal)}
+  .sub{margin-top:14px;max-width:60ch;color:var(--muted);font-size:clamp(15px,2.2vw,17px);line-height:1.55}
+  .obj{
+    margin-top:16px;display:inline-flex;gap:10px;align-items:flex-start;
+    background:#fff8;border:1px solid var(--line);border-radius:12px;
+    padding:12px 16px;font-size:14px;max-width:60ch;line-height:1.5;
+  }
+  .obj b{color:var(--ink)}
+  .obj .tag{font-family:&quot;Space Mono&quot;,monospace;font-size:11px;color:var(--coral);font-weight:700;white-space:nowrap;margin-top:1px}
+
+  /* Layout */
+  .grid{display:grid;grid-template-columns:1.15fr .85fr;gap:18px;margin-top:26px}
+  @media(max-width:860px){.grid{grid-template-columns:1fr}}
+  .card{
+    background:var(--paper-2);border:1px solid var(--line);border-radius:18px;
+    padding:18px;box-shadow:var(--shadow);position:relative;
+  }
+  .card h2{
+    font-family:&quot;Space Mono&quot;,monospace;font-size:12px;letter-spacing:.12em;
+    text-transform:uppercase;color:var(--muted);font-weight:700;margin-bottom:14px;
+    display:flex;align-items:center;gap:8px;
+  }
+  .dot{width:9px;height:9px;border-radius:50%;display:inline-block}
+
+  /* Track */
+  .track-card{display:flex;flex-direction:column}
+  .stage{position:relative;height:230px;border-radius:12px;overflow:hidden;
+    background:linear-gradient(#eaf1ef 0%,#eaf1ef 62%,#e4dccb 62%,#ddd2bb 100%);
+    border:1px solid var(--line);
+  }
+  .sky-label{position:absolute;top:8px;left:12px;font-family:&quot;Space Mono&quot;,monospace;
+    font-size:10px;letter-spacing:.1em;color:#9fb3ad;text-transform:uppercase}
+  .ground{position:absolute;left:0;right:0;bottom:34%;height:2px;background:var(--ink);opacity:.25}
+  .ruler{position:absolute;left:0;right:0;bottom:calc(34% - 22px);height:20px;
+    display:flex;justify-content:space-between;padding:0 14px;
+    font-family:&quot;Space Mono&quot;,monospace;font-size:10px;color:var(--muted)}
+  .ruler span{position:relative}
+  .ruler span::before{content:&quot;&quot;;position:absolute;top:-6px;left:50%;width:1px;height:6px;background:var(--line)}
+  /* Car */
+  .car{position:absolute;bottom:calc(34% + 1px);left:0;transform:translateX(-50%);
+    transition:none;will-change:left;z-index:4}
+  .car .body{width:54px;height:24px;background:var(--teal);border-radius:7px 9px 5px 5px;position:relative;
+    box-shadow:0 4px 10px -3px rgba(13,107,99,.6)}
+  .car .body::before{content:&quot;&quot;;position:absolute;top:-11px;left:11px;width:26px;height:14px;
+    background:var(--teal);border-radius:7px 7px 0 0}
+  .car .win{position:absolute;top:-8px;left:15px;width:16px;height:8px;background:#cde7e2;border-radius:3px 3px 0 0}
+  .car .w{position:absolute;bottom:-5px;width:11px;height:11px;background:#221;border-radius:50%;border:2px solid #555}
+  .car .w1{left:6px}.car .w2{right:6px}
+  .start-flag{position:absolute;bottom:34%;left:14px;transform:translateY(0);
+    font-size:11px;font-family:&quot;Space Mono&quot;,monospace;color:var(--muted);z-index:3}
+  .start-flag::before{content:&quot;⚑&quot;;display:block;font-size:16px;color:var(--coral)}
+
+  /* ghost overlay */
+  #ghost{position:absolute;inset:0;z-index:5;pointer-events:none}
+  .ghost-note{position:absolute;top:10px;right:12px;max-width:200px;z-index:6;
+    background:var(--coral);color:#fff;border-radius:10px;padding:10px 12px;font-size:12px;line-height:1.4;
+    box-shadow:0 8px 20px -8px rgba(198,69,47,.7);opacity:0;transform:translateY(-6px);
+    transition:opacity .3s,transform .3s;pointer-events:none}
+  .ghost-note.show{opacity:1;transform:translateY(0)}
+
+  /* status strip */
+  .status{margin-top:14px;display:flex;align-items:center;gap:12px;min-height:46px;
+    background:#fff8;border:1px solid var(--line);border-radius:12px;padding:10px 14px}
+  .status .ic{font-size:20px;flex:none}
+  .status .txt{font-size:14px;font-weight:600;line-height:1.35}
+  .status.warn{border-color:var(--coral);background:#fdeee9}
+  .status.warn .txt{color:var(--coral)}
+
+  /* Graphs */
+  .formula{margin-top:12px;display:flex;justify-content:space-between;align-items:center;gap:8px;
+    background:#fff8;border:1px solid var(--line);border-radius:10px;padding:9px 13px;flex-wrap:wrap}
+  .formula .eq{font-family:&quot;Space Mono&quot;,monospace;font-size:12px;color:var(--ink)}
+  .formula .live{font-family:&quot;Space Mono&quot;,monospace;font-size:12px;color:var(--muted);white-space:nowrap}
+  .formula .live b{color:var(--ink);font-weight:700}
+  .graphs{display:flex;flex-direction:column;gap:18px}
+  .gwrap{position:relative;width:100%;aspect-ratio:16/9;min-height:150px}
+  canvas{width:100%;height:100%;display:block}
+
+  /* Controls */
+  .controls{margin-top:18px}
+  .scen{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
+  .scen button{
+    font-family:&quot;Hanken Grotesk&quot;,sans-serif;font-weight:600;font-size:13.5px;
+    text-align:left;padding:11px 13px;border-radius:11px;border:1.5px solid var(--line);
+    background:#fff8;color:var(--ink);cursor:pointer;transition:all .15s;line-height:1.25}
+  .scen button small{display:block;font-weight:400;color:var(--muted);font-size:11px;margin-top:2px;font-family:&quot;Space Mono&quot;,monospace}
+  .scen button:hover{border-color:var(--teal);transform:translateY(-1px)}
+  .scen button.active{background:var(--teal);color:#fff;border-color:var(--teal)}
+  .scen button.active small{color:#cde7e2}
+  .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  .btn{font-family:&quot;Hanken Grotesk&quot;;font-weight:700;font-size:14px;padding:11px 20px;border-radius:11px;
+    border:none;cursor:pointer;transition:all .15s;display:inline-flex;align-items:center;gap:8px}
+  .btn-play{background:var(--ink);color:var(--paper)}
+  .btn-play:hover{transform:translateY(-1px)}
+  .btn-reset{background:transparent;color:var(--muted);border:1.5px solid var(--line)}
+  .btn-reset:hover{border-color:var(--muted)}
+  .btn-mis{background:#fff;color:var(--coral);border:1.5px solid var(--coral);margin-left:auto}
+  .btn-mis.on{background:var(--coral);color:#fff}
+  @media(max-width:520px){.btn-mis{margin-left:0;width:100%;justify-content:center}}
+
+  /* Quiz */
+  .quiz{margin-top:18px}
+  .q-num{font-family:&quot;Space Mono&quot;,monospace;font-size:11px;letter-spacing:.1em;color:var(--muted);text-transform:uppercase;margin-bottom:10px}
+  .q-text{font-family:&quot;Fraunces&quot;,serif;font-size:clamp(18px,3vw,22px);font-weight:600;line-height:1.3;margin-bottom:16px}
+  .opts{display:grid;gap:9px}
+  .opt{text-align:left;padding:13px 15px;border-radius:11px;border:1.5px solid var(--line);background:#fff8;
+    font-family:&quot;Hanken Grotesk&quot;;font-size:14.5px;font-weight:500;cursor:pointer;transition:all .15s;color:var(--ink);line-height:1.3}
+  .opt:hover:not(:disabled){border-color:var(--teal);transform:translateY(-1px)}
+  .opt:disabled{cursor:default}
+  .opt.correct{background:#e6f4ec;border-color:#1f9d57;color:#16703f;font-weight:600}
+  .opt.wrong{background:#fdeae6;border-color:var(--coral);color:var(--coral);font-weight:600}
+  .fb{margin-top:14px;padding:13px 15px;border-radius:11px;font-size:13.5px;line-height:1.55;display:none}
+  .fb.show{display:block}
+  .fb.ok{background:#e6f4ec;color:#16703f;border:1px solid #1f9d57}
+  .fb.no{background:#fdeae6;color:var(--coral);border:1px solid var(--coral)}
+  .quiz-foot{margin-top:16px;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+  .score{font-family:&quot;Space Mono&quot;,monospace;font-size:13px;color:var(--muted)}
+  .score b{color:var(--ink)}
+  footer{margin-top:30px;padding-top:18px;border-top:1px solid var(--line);
+    display:flex;justify-content:space-between;gap:14px;flex-wrap:wrap;
+    font-size:12.5px;color:var(--muted);font-family:&quot;Space Mono&quot;,monospace}
+  footer b{color:var(--ink);font-weight:700}
+</style>
+</head>
+<body>
+<div class=&quot;wrap&quot;>
+  <header>
+    <div class=&quot;kicker&quot;>Form 4 Mathematics · Chapter 7: Graphs of Motion</div>
+    <h1>The graph is <em>not</em> a map of where the car goes.</h1>
+    <p class=&quot;sub&quot;>A distance-time graph shows how far the car is from its start — it is <b>not</b> a picture of the road. Drive the car along a flat, straight track and watch the graph rise and fall, even though the car never leaves the ground.</p>
+    <div class=&quot;obj&quot;>
+      <span class=&quot;tag&quot;>START HERE</span>
+      <span><b>A distance–time graph only tells you one thing: how far the car is from where it started, at each moment.</b> It is <b>not</b> a picture of the road. That's why the line can go up and down even though the car only drives left–right on flat ground. Lots of students read the graph like a map by mistake — drive the car below and catch the difference yourself. 👇</span>
+    </div>
+  </header>
+
+  <div class=&quot;grid&quot;>
+    <!-- LEFT: track + controls -->
+    <div class=&quot;card track-card&quot;>
+      <h2><span class=&quot;dot&quot; style=&quot;background:var(--teal)&quot;></span> The real motion (flat, straight track)</h2>
+      <div class=&quot;stage&quot; id=&quot;stage&quot;>
+        <span class=&quot;sky-label&quot;>↑ this is the SKY — the car can't go here</span>
+        <div class=&quot;ground&quot;></div>
+        <div class=&quot;ruler&quot; id=&quot;ruler&quot;></div>
+        <div class=&quot;start-flag&quot;>start</div>
+        <div class=&quot;car&quot; id=&quot;car&quot;>
+          <div class=&quot;body&quot;><span class=&quot;win&quot;></span></div>
+          <span class=&quot;w w1&quot;></span><span class=&quot;w w2&quot;></span>
+        </div>
+        <canvas id=&quot;ghost&quot;></canvas>
+        <div class=&quot;ghost-note&quot; id=&quot;ghostNote&quot;>🤯 If the graph were a map, the car would fly up like this — impossible! Height on the graph really just means <b>distance from start</b>.</div>
+      </div>
+
+      <div class=&quot;status&quot; id=&quot;status&quot;>
+        <span class=&quot;ic&quot;>🅿️</span>
+        <span class=&quot;txt&quot;>Pick a journey below, then press Play.</span>
+      </div>
+
+      <div class=&quot;controls&quot;>
+        <div class=&quot;scen&quot; id=&quot;scen&quot;>
+          <button data-s=&quot;steady&quot; class=&quot;active&quot;>Steady drive →<small>constant speed</small></button>
+          <button data-s=&quot;accel&quot;>Speeding up →<small>acceleration</small></button>
+          <button data-s=&quot;decel&quot;>Slowing down →<small>deceleration</small></button>
+          <button data-s=&quot;thereback&quot;>There &amp;amp; back ↩<small>forward then reverse</small></button>
+          <button data-s=&quot;stopgo&quot;>Stop &amp;amp; go ⏸<small>moves, pauses, moves</small></button>
+        </div>
+        <div class=&quot;row&quot;>
+          <button class=&quot;btn btn-play&quot; id=&quot;play&quot;>▶ Play</button>
+          <button class=&quot;btn btn-reset&quot; id=&quot;reset&quot;>↺ Reset</button>
+          <button class=&quot;btn btn-mis&quot; id=&quot;mis&quot;>🤯 Show the common mistake</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT: graphs -->
+    <div class=&quot;graphs&quot;>
+      <div class=&quot;card&quot;>
+        <h2><span class=&quot;dot&quot; style=&quot;background:var(--teal)&quot;></span> Distance–time graph (d–t)</h2>
+        <div class=&quot;gwrap&quot;><canvas id=&quot;dt&quot;></canvas></div>
+        <div class=&quot;formula&quot;>
+          <span class=&quot;eq&quot;><b style=&quot;color:var(--teal)&quot;>gradient</b> = speed = Δdistance ÷ Δtime</span>
+          <span class=&quot;live&quot;>now: <b id=&quot;dtLive&quot;>0.0</b> m/s</span>
+        </div>
+      </div>
+      <div class=&quot;card&quot;>
+        <h2><span class=&quot;dot&quot; style=&quot;background:var(--amber)&quot;></span> Velocity–time graph (v–t)</h2>
+        <div class=&quot;gwrap&quot;><canvas id=&quot;vt&quot;></canvas></div>
+        <div class=&quot;formula&quot;>
+          <span class=&quot;eq&quot;><b style=&quot;color:var(--amber)&quot;>area</b> under graph = distance&amp;nbsp; · &amp;nbsp;gradient = acceleration</span>
+          <span class=&quot;live&quot;>distance: <b id=&quot;vtLive&quot;>0</b> m</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class=&quot;card quiz&quot; id=&quot;quiz&quot;>
+    <h2><span class=&quot;dot&quot; style=&quot;background:var(--coral)&quot;></span> Quick check — can you spot the trap?</h2>
+    <div class=&quot;q-num&quot; id=&quot;qNum&quot;>Question 1 of 3</div>
+    <div class=&quot;q-text&quot; id=&quot;qText&quot;></div>
+    <div class=&quot;opts&quot; id=&quot;qOpts&quot;></div>
+    <div class=&quot;fb&quot; id=&quot;qFb&quot;></div>
+    <div class=&quot;quiz-foot&quot;>
+      <span class=&quot;score&quot;>Score: <b id=&quot;qScore&quot;>0</b> / 3</span>
+      <button class=&quot;btn btn-play&quot; id=&quot;qNext&quot; style=&quot;display:none&quot;>Next →</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const T = 10;            // total seconds
+const DMAX = 100;        // metres (distance axis)
+const VMAX = 22;         // velocity axis (+/-)
+const css = getComputedStyle(document.documentElement);
+const C = {
+  ink: css.getPropertyValue('--ink').trim(),
+  muted: css.getPropertyValue('--muted').trim(),
+  line: css.getPropertyValue('--line').trim(),
+  teal: css.getPropertyValue('--teal').trim(),
+  amber: css.getPropertyValue('--amber').trim(),
+  coral: css.getPropertyValue('--coral').trim(),
+};
+
+/* ---- scenarios: return {pos (0-100), vel} at time t ---- */
+const scenarios = {
+  steady:    t => ({ pos: 9*t,                         vel: 9 }),
+  accel:     t => ({ pos: 0.9*t*t,                     vel: 1.8*t }),
+  decel:     t => ({ pos: 18*t - 0.9*t*t,              vel: Math.max(0, 18 - 1.8*t) }),
+  thereback: t => t<=5 ? ({pos:18*t, vel:18}) : ({pos:90-18*(t-5), vel:-18}),
+  stopgo:    t => {
+    if(t<3)  return {pos:15*t,        vel:15};
+    if(t<5)  return {pos:45,          vel:0};
+    if(t<8)  return {pos:45+15*(t-5), vel:15};
+    return {pos:90, vel:0};
+  }
+};
+let current = 'steady';
+
+/* ---- canvases ---- */
+function setupCanvas(cv){
+  const dpr = window.devicePixelRatio||1;
+  const r = cv.getBoundingClientRect();
+  cv.width = r.width*dpr; cv.height = r.height*dpr;
+  const ctx = cv.getContext('2d'); ctx.scale(dpr,dpr);
+  return {ctx, w:r.width, h:r.height};
+}
+let dt, vt, ghost;
+function initCanvases(){
+  dt = setupCanvas(document.getElementById('dt'));
+  vt = setupCanvas(document.getElementById('vt'));
+  const g = document.getElementById('ghost');
+  const dpr = window.devicePixelRatio||1;
+  const r = document.getElementById('stage').getBoundingClientRect();
+  g.width=r.width*dpr; g.height=r.height*dpr;
+  const gctx=g.getContext('2d'); gctx.scale(dpr,dpr);
+  ghost={ctx:gctx,w:r.width,h:r.height};
+}
+
+/* ---- graph drawing ---- */
+function drawAxes(o, yLabels, zeroLine){
+  const {ctx,w,h}=o, padL=42, padB=26, padT=12, padR=10;
+  const x0=padL, x1=w-padR, y0=h-padB, y1=padT;
+  ctx.clearRect(0,0,w,h);
+  // grid
+  ctx.strokeStyle=C.line; ctx.lineWidth=1; ctx.font='10px &quot;Space Mono&quot;'; ctx.fillStyle=C.muted;
+  yLabels.forEach(L=>{
+    const y=y1+(y0-y1)*(1-L.f);
+    ctx.beginPath();ctx.moveTo(x0,y);ctx.lineTo(x1,y);
+    ctx.globalAlpha=L.v===0&amp;&amp;zeroLine?.55:.5;ctx.stroke();ctx.globalAlpha=1;
+    ctx.textAlign='right';ctx.fillText(L.t,x0-6,y+3);
+  });
+  // axis lines
+  ctx.strokeStyle=C.ink;ctx.globalAlpha=.55;ctx.lineWidth=1.4;
+  ctx.beginPath();ctx.moveTo(x0,y1);ctx.lineTo(x0,y0);ctx.lineTo(x1,y0);ctx.stroke();ctx.globalAlpha=1;
+  // x labels
+  ctx.textAlign='center';
+  for(let s=0;s<=T;s+=2){const x=x0+(x1-x0)*(s/T);ctx.fillText(s+'s',x,y0+15);}
+  ctx.save();ctx.translate(12,(y0+y1)/2);ctx.rotate(-Math.PI/2);ctx.textAlign='center';
+  ctx.fillStyle=C.muted;ctx.fillText(o.axis,0,0);ctx.restore();
+  return {x0,x1,y0,y1};
+}
+function plot(o, fn, color, tNow){
+  o.axis = fn.axis;
+  const g = drawAxes(o, fn.labels, fn.zero);
+  const {x0,x1,y0,y1}=g;
+  ctx2 = o.ctx;
+  ctx2.strokeStyle=color;ctx2.lineWidth=2.6;ctx2.lineJoin='round';ctx2.beginPath();
+  let started=false;
+  for(let t=0;t<=tNow+0.0001;t+=0.04){
+    const val=fn.val(Math.min(t,T));
+    const x=x0+(x1-x0)*(Math.min(t,T)/T);
+    const y=y1+(y0-y1)*(1-fn.norm(val));
+    if(!started){ctx2.moveTo(x,y);started=true;}else ctx2.lineTo(x,y);
+  }
+  ctx2.stroke();
+  // moving dot
+  if(tNow>0){
+    const val=fn.val(Math.min(tNow,T));
+    const x=x0+(x1-x0)*(Math.min(tNow,T)/T);
+    const y=y1+(y0-y1)*(1-fn.norm(val));
+    ctx2.fillStyle=color;ctx2.beginPath();ctx2.arc(x,y,4.5,0,7);ctx2.fill();
+    ctx2.fillStyle='#fff';ctx2.beginPath();ctx2.arc(x,y,1.8,0,7);ctx2.fill();
+  }
+}
+const dtFn = {
+  axis:'distance (m)', zero:false,
+  labels:[{f:0,t:'0',v:0},{f:.5,t:'50',v:50},{f:1,t:'100',v:100}],
+  val:t=>scenarios[current](t).pos,
+  norm:v=>v/DMAX
+};
+const vtFn = {
+  axis:'velocity (m/s)', zero:true,
+  labels:[{f:1,t:'+20',v:20},{f:.5,t:'0',v:0},{f:0,t:'-20',v:-20}],
+  val:t=>scenarios[current](t).vel,
+  norm:v=>(v+VMAX)/(2*VMAX)
+};
+
+/* ---- ghost (the misconception visual) ---- */
+function drawGhost(tNow, on){
+  const {ctx,w,h}=ghost; ctx.clearRect(0,0,w,h);
+  if(!on) return;
+  const groundY=h*0.66, top=h*0.12, padX=24;
+  // full faint path: x=time, height=distance  (what the misconception implies)
+  ctx.strokeStyle=C.coral;ctx.setLineDash([5,5]);ctx.lineWidth=2;ctx.globalAlpha=.45;ctx.beginPath();
+  for(let t=0;t<=T;t+=0.05){
+    const pos=scenarios[current](t).pos;
+    const x=padX+(w-2*padX)*(t/T);
+    const y=groundY-(groundY-top)*(pos/DMAX);
+    if(t===0)ctx.moveTo(x,y);else ctx.lineTo(x,y);
+  }
+  ctx.stroke();ctx.setLineDash([]);ctx.globalAlpha=1;
+  // ghost car at current point
+  const pos=scenarios[current](Math.min(tNow,T)).pos;
+  const x=padX+(w-2*padX)*(Math.min(tNow,T)/T);
+  const y=groundY-(groundY-top)*(pos/DMAX);
+  ctx.globalAlpha=.85;ctx.fillStyle=C.coral;
+  ctx.beginPath();ctx.roundRect(x-16,y-9,32,16,5);ctx.fill();
+  ctx.fillStyle='#fff';ctx.font='11px &quot;Space Mono&quot;';ctx.textAlign='center';ctx.fillText('👻',x,y+4);
+  ctx.globalAlpha=1;
+}
+
+/* ---- car + ruler ---- */
+function placeCar(pos){
+  const stage=document.getElementById('stage');
+  const pad=24, usable=stage.clientWidth-2*pad;
+  document.getElementById('car').style.left=(pad+usable*(pos/DMAX))+'px';
+}
+function buildRuler(){
+  const r=document.getElementById('ruler');r.innerHTML='';
+  [0,25,50,75,100].forEach(m=>{const s=document.createElement('span');s.textContent=m+'m';r.appendChild(s);});
+}
+
+/* ---- status messaging ---- */
+let prevVel=0;
+function setStatus(vel, accel){
+  const el=document.getElementById('status');
+  const ic=el.querySelector('.ic'), tx=el.querySelector('.txt');
+  el.classList.remove('warn');
+  if(Math.abs(vel)<0.3){ic.textContent='🛑';tx.textContent='Stopped — the car is not moving, so the d–t line stays flat (level).';}
+  else if(vel<0){
+    ic.textContent='↩️';tx.textContent='Moving BACK toward the start — the line goes DOWN, but the car is NOT going downward!';
+    el.classList.add('warn');
+  }
+  else if(accel>0.5){ic.textContent='🚀';tx.textContent='Speeding up — the d–t line curves and gets steeper.';}
+  else {ic.textContent='🚗';tx.textContent='Steady forward — the d–t line is a straight slope.';}
+}
+
+/* ---- animation loop ---- */
+let playing=false, startTs=0, tNow=0, misOn=false;
+function frame(ts){
+  if(!startTs)startTs=ts;
+  tNow=(ts-startTs)/1000;
+  if(tNow>=T){tNow=T;playing=false;}
+  render();
+  if(playing)requestAnimationFrame(frame);
+  else document.getElementById('play').textContent='▶ Play';
+}
+function render(){
+  const {pos,vel}=scenarios[current](Math.min(tNow,T));
+  placeCar(pos);
+  plot(dt,dtFn,C.teal,tNow);
+  plot(vt,vtFn,C.amber,tNow);
+  drawGhost(tNow,misOn);
+  document.getElementById('dtLive').textContent=vel.toFixed(1);
+  document.getElementById('vtLive').textContent=Math.round(pos);
+  const accel=vel-prevVel; prevVel=vel;
+  setStatus(vel,accel);
+  // ghost note + reverse warning highlight
+  const note=document.getElementById('ghostNote');
+  if(misOn &amp;&amp; tNow>0.3) note.classList.add('show'); else note.classList.remove('show');
+}
+
+/* ---- controls ---- */
+function reset(){playing=false;startTs=0;tNow=0;prevVel=0;render();
+  document.getElementById('play').textContent='▶ Play';
+  const el=document.getElementById('status');el.classList.remove('warn');
+  el.querySelector('.ic').textContent='🅿️';
+  el.querySelector('.txt').textContent='Press Play to start the journey.';
+}
+document.getElementById('play').addEventListener('click',()=>{
+  if(playing){playing=false;return;}
+  if(tNow>=T)reset();
+  playing=true;startTs=0;
+  document.getElementById('play').textContent='⏸ Pause';
+  requestAnimationFrame(frame);
+});
+document.getElementById('reset').addEventListener('click',reset);
+document.getElementById('mis').addEventListener('click',e=>{
+  misOn=!misOn;e.currentTarget.classList.toggle('on',misOn);
+  e.currentTarget.textContent=misOn?'✓ Mistake view ON':'🤯 Show the common mistake';
+  if(misOn &amp;&amp; current!=='thereback'){
+    // there&amp;back shows it most dramatically — nudge selection
+  }
+  render();
+});
+document.querySelectorAll('#scen button').forEach(b=>{
+  b.addEventListener('click',()=>{
+    document.querySelectorAll('#scen button').forEach(x=>x.classList.remove('active'));
+    b.classList.add('active');current=b.dataset.s;reset();
+  });
+});
+
+window.addEventListener('resize',()=>{initCanvases();buildRuler();render();});
+initCanvases();buildRuler();reset();
+
+/* ---- quiz (targets the misconception + sets up the LA layer) ---- */
+const QUIZ=[
+ {q:&quot;On a distance–time graph, the line slopes DOWNWARD. What is the car doing?&quot;,
+  o:[&quot;Driving downhill&quot;,&quot;Moving back toward the start&quot;,&quot;Speeding up&quot;,&quot;Parked / stopped&quot;],a:1,
+  ok:&quot;A downward line means the car is getting closer to its start. The graph is not a picture of the road.&quot;,
+  no:&quot;This is the classic trap. The graph isn't a map of the road — a downward line just means distance from start is decreasing, so the car is heading back.&quot;},
+ {q:&quot;A distance–time graph is a flat, HORIZONTAL line. What does this tell us?&quot;,
+  o:[&quot;The car moves at a steady speed&quot;,&quot;The car is stopped&quot;,&quot;The car is reversing&quot;,&quot;The road is flat&quot;],a:1,
+  ok:&quot;Zero gradient = no change in distance over time = the car is stopped.&quot;,
+  no:&quot;Check the gradient — it's zero. No change in distance means the car isn't moving. A flat line is a stopped car, not a cruising one.&quot;},
+ {q:&quot;On a velocity–time graph, the line slopes downward but stays ABOVE zero. The car is…&quot;,
+  o:[&quot;Reversing&quot;,&quot;Slowing down (decelerating)&quot;,&quot;Stopped&quot;,&quot;Going downhill&quot;],a:1,
+  ok:&quot;Velocity is still positive, so it's still moving forward — the negative gradient means it's decelerating.&quot;,
+  no:&quot;Velocity is still above zero, so the car is still moving forward. The downward slope means it's slowing down (deceleration), not reversing.&quot;}
+];
+let qi=0,qScore=0,answered=false;
+function showQ(){
+ const Q=QUIZ[qi];answered=false;
+ document.getElementById('qNum').textContent='Question '+(qi+1)+' of '+QUIZ.length;
+ document.getElementById('qText').textContent=Q.q;
+ const opts=document.getElementById('qOpts');opts.innerHTML='';
+ Q.o.forEach((t,i)=>{const b=document.createElement('button');b.className='opt';b.textContent=t;
+   b.addEventListener('click',()=>pick(i,b));opts.appendChild(b);});
+ document.getElementById('qFb').className='fb';
+ document.getElementById('qNext').style.display='none';
+}
+function pick(i,btn){
+ if(answered)return;answered=true;
+ const Q=QUIZ[qi],opts=[...document.getElementById('qOpts').children],fb=document.getElementById('qFb');
+ opts.forEach((b,j)=>{b.disabled=true;if(j===Q.a)b.classList.add('correct');});
+ if(i===Q.a){qScore++;document.getElementById('qScore').textContent=qScore;fb.className='fb ok show';fb.textContent='✓ '+Q.ok;}
+ else{btn.classList.add('wrong');fb.className='fb no show';fb.textContent='✗ '+Q.no;}
+ const next=document.getElementById('qNext');next.style.display='inline-flex';
+ next.textContent=qi<QUIZ.length-1?'Next →':'See result';
+}
+document.getElementById('qNext').addEventListener('click',()=>{
+ if(qi<QUIZ.length-1){qi++;showQ();}
+ else{
+   const fb=document.getElementById('qFb');
+   document.getElementById('qNum').textContent='Result';
+   document.getElementById('qText').textContent='You scored '+qScore+' / '+QUIZ.length;
+   document.getElementById('qOpts').innerHTML='';
+   fb.className='fb ok show';
+   fb.textContent=qScore===3?'🎉 Perfect — you read every graph by its gradient, not as a picture of the road.':'Good effort! The key idea: a distance–time graph shows distance from the start, not the path the car drives.';
+   document.getElementById('qNext').style.display='none';
+   const sc=document.querySelector('.score');if(sc)sc.style.display='none';
+ }
+});
+showQ();
+</script>
+<script>
+function openFrame(id){
+  var b=new Blob([document.getElementById(id).srcdoc],{type:'text/html'});
+  window.open(URL.createObjectURL(b),'_blank');
+}
+document.getElementById('openDemo').addEventListener('click',function(){openFrame('demoFrame');});
+document.getElementById('openDash').addEventListener('click',function(){openFrame('dashFrame');});
+</script>
+</body>
+</html>
+" title="Graph of Motion interactive demo" loading="lazy"></iframe></div>
+  </section>
+
+  <!-- 4 MEASUREMENT -->
+  <section>
+    <div class="sec-label"><span class="n">4</span> How I measure it</div>
+    <h2>The quiz is data, not just a score.</h2>
+    <p>Because each wrong answer maps to a <b>named misconception</b>, a class set of responses becomes diagnostic. It tells a teacher <b>which</b> wrong model is most common — and therefore exactly what to reteach.</p>
+    <div class="map">
+      <div class="row h"><div>If a student picks…</div><div>…it reveals this misconception</div></div>
+      <div class="row"><div>"Driving downhill" (line falls)</div><div class="ans">Reads the graph as the road</div></div>
+      <div class="row"><div>"Steady speed" (flat line)</div><div class="ans">Confuses "no movement" with "constant speed"</div></div>
+      <div class="row"><div>"Reversing" (v–t falls, stays positive)</div><div class="ans">Confuses decelerating with going backward</div></div>
+    </div>
+    <p style="margin-top:18px">I turned that into a <b>learning-analytics dashboard</b>: it aggregates the quiz responses and flags the most common misconception per class, then recommends what to reteach first. Switch between classes below — the diagnosis <b>and</b> the recommended action change with the data.</p>
+    <div class="demo-cta" style="margin-top:18px">
+      <div class="t">Learning-analytics dashboard<small>Try the class selector — each class surfaces a different misconception and a different next move.</small></div>
+      <button class="launch" id="openDash" type="button">▶ Open full dashboard</button>
+    </div>
+    <div class="frame"><iframe id="dashFrame" srcdoc="<!DOCTYPE html>
+<html lang=&quot;en&quot;>
+<head>
+<meta charset=&quot;UTF-8&quot;>
+<meta name=&quot;viewport&quot; content=&quot;width=device-width, initial-scale=1.0&quot;>
+<title>Learning Analytics — Graph of Motion</title>
+<link rel=&quot;preconnect&quot; href=&quot;https://fonts.googleapis.com&quot;>
+<link rel=&quot;preconnect&quot; href=&quot;https://fonts.gstatic.com&quot; crossorigin>
+<link href=&quot;https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,900&amp;family=Hanken+Grotesk:wght@400;500;600;700&amp;family=Space+Mono:wght@400;700&amp;display=swap&quot; rel=&quot;stylesheet&quot;>
+<style>
+  :root{
+    --paper:#f4efe6;--paper-2:#efe8db;--ink:#211c16;--muted:#736a5c;--line:#d8cfbe;
+    --teal:#0d6b63;--amber:#cf7a17;--coral:#c6452f;--gold:#d9a441;--green:#1f9d57;
+    --shadow:0 1px 0 #fff inset, 0 10px 30px -12px rgba(33,28,22,.35);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--paper);color:var(--ink);font-family:&quot;Hanken Grotesk&quot;,sans-serif;
+    -webkit-font-smoothing:antialiased;line-height:1.5;
+    background-image:radial-gradient(rgba(33,28,22,.035) 1px,transparent 1px);background-size:22px 22px;
+    padding:clamp(16px,3.5vw,48px) clamp(14px,3vw,40px)}
+  .wrap{max-width:980px;margin:0 auto}
+
+  .kicker{font-family:&quot;Space Mono&quot;,monospace;font-size:12px;letter-spacing:.18em;text-transform:uppercase;
+    color:var(--teal);font-weight:700;margin-bottom:12px;display:flex;align-items:center;gap:10px}
+  .kicker::before{content:&quot;&quot;;width:34px;height:2px;background:var(--teal)}
+  h1{font-family:&quot;Fraunces&quot;,serif;font-weight:900;line-height:1.05;font-size:clamp(28px,5vw,46px);letter-spacing:-.02em;max-width:18ch}
+  .topbar{display:flex;justify-content:space-between;align-items:flex-end;gap:18px;flex-wrap:wrap;margin-top:20px}
+  .selector label{font-family:&quot;Space Mono&quot;,monospace;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:6px}
+  select{font-family:&quot;Hanken Grotesk&quot;;font-weight:600;font-size:15px;padding:10px 38px 10px 14px;border-radius:11px;
+    border:1.5px solid var(--line);background:var(--paper-2);color:var(--ink);cursor:pointer;
+    appearance:none;background-image:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M2 4l4 4 4-4' stroke='%23736a5c' stroke-width='1.6' fill='none'/%3E%3C/svg%3E&quot;);
+    background-repeat:no-repeat;background-position:right 13px center}
+
+  /* stat cards */
+  .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:24px}
+  @media(max-width:560px){.stats{grid-template-columns:1fr}}
+  .stat{background:var(--paper-2);border:1px solid var(--line);border-radius:16px;padding:18px 20px;box-shadow:var(--shadow)}
+  .stat .v{font-family:&quot;Fraunces&quot;,serif;font-weight:900;font-size:clamp(30px,5vw,42px);line-height:1;letter-spacing:-.02em}
+  .stat .l{font-size:13px;color:var(--muted);margin-top:8px}
+  .stat .v small{font-size:.5em;font-weight:600;color:var(--muted)}
+
+  /* headline insight */
+  .insight{margin-top:18px;background:var(--ink);color:var(--paper);border-radius:20px;padding:clamp(22px,3.5vw,32px);position:relative;overflow:hidden}
+  .insight::after{content:&quot;&quot;;position:absolute;right:-40px;top:-40px;width:180px;height:180px;border-radius:50%;background:rgba(217,164,65,.12)}
+  .insight .tag{font-family:&quot;Space Mono&quot;,monospace;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);font-weight:700;margin-bottom:12px}
+  .insight h2{font-family:&quot;Fraunces&quot;,serif;font-weight:600;font-size:clamp(21px,3.4vw,28px);line-height:1.25;margin-bottom:6px;position:relative;z-index:1}
+  .insight h2 b{color:var(--gold)}
+  .insight .pct{font-family:&quot;Fraunces&quot;,serif;font-weight:900;color:var(--gold)}
+  .insight .action{margin-top:16px;padding-top:16px;border-top:1px solid rgba(244,239,230,.18);display:flex;gap:12px;align-items:flex-start;font-size:15px;color:#e3dccc;line-height:1.5;position:relative;z-index:1}
+  .insight .action .lab{font-family:&quot;Space Mono&quot;,monospace;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--gold);font-weight:700;white-space:nowrap;margin-top:2px}
+
+  /* generic card */
+  .card{background:var(--paper-2);border:1px solid var(--line);border-radius:18px;padding:clamp(18px,3vw,24px);box-shadow:var(--shadow);margin-top:18px}
+  .card h3{font-family:&quot;Space Mono&quot;,monospace;font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:700;margin-bottom:4px}
+  .card .desc{font-size:13.5px;color:var(--muted);margin-bottom:18px}
+
+  /* prevalence bars */
+  .pbar{margin-bottom:16px}
+  .pbar:last-child{margin-bottom:0}
+  .pbar .top{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:7px;gap:12px}
+  .pbar .nm{font-weight:600;font-size:14.5px}
+  .pbar .nm small{display:block;font-family:&quot;Space Mono&quot;,monospace;font-size:11px;color:var(--muted);font-weight:400;margin-top:1px}
+  .pbar .pc{font-family:&quot;Space Mono&quot;,monospace;font-weight:700;font-size:15px}
+  .track{height:14px;background:#e3dac9;border-radius:7px;overflow:hidden}
+  .fill{height:100%;border-radius:7px;background:var(--coral);transition:width .6s cubic-bezier(.2,.7,.2,1)}
+  .pbar.top1 .pc{color:var(--coral)}
+  .pbar:not(.top1) .fill{background:#b9a98c}
+  .pbar:not(.top1) .pc{color:var(--muted)}
+
+  /* question breakdown */
+  .qrow{margin-bottom:20px}
+  .qrow:last-child{margin-bottom:0}
+  .qrow .qh{display:flex;justify-content:space-between;gap:12px;align-items:baseline;margin-bottom:8px}
+  .qrow .qt{font-weight:600;font-size:14.5px}
+  .qrow .qt span{font-family:&quot;Space Mono&quot;,monospace;color:var(--muted);font-size:12px;margin-right:8px}
+  .qrow .qc{font-family:&quot;Space Mono&quot;,monospace;font-size:13px;color:var(--green);font-weight:700}
+  .stack{display:flex;height:30px;border-radius:8px;overflow:hidden;background:#e3dac9}
+  .seg{height:100%;display:flex;align-items:center;justify-content:center;font-family:&quot;Space Mono&quot;,monospace;
+    font-size:11px;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;transition:width .6s cubic-bezier(.2,.7,.2,1)}
+  .seg.correct{background:var(--teal)}
+  .seg.mis{background:var(--coral)}
+  .seg.other{background:#b9a98c}
+  .qlegend{display:flex;gap:16px;flex-wrap:wrap;margin-top:9px;font-size:12px;color:var(--muted)}
+  .qlegend span{display:flex;align-items:center;gap:6px}
+  .qlegend i{width:11px;height:11px;border-radius:3px;display:inline-block}
+
+  /* heatmap */
+  .hmscroll{overflow-x:auto;padding-bottom:6px}
+  .hm{display:grid;gap:3px;min-width:max-content}
+  .hm .rowlab{font-family:&quot;Space Mono&quot;,monospace;font-size:11px;color:var(--muted);display:flex;align-items:center;padding-right:10px;white-space:nowrap}
+  .cell{width:15px;height:15px;border-radius:3px}
+  .cell.ok{background:var(--teal)}
+  .cell.no{background:var(--coral);opacity:.85}
+  .hmleg{display:flex;gap:16px;margin-top:14px;font-size:12px;color:var(--muted)}
+  .hmleg span{display:flex;align-items:center;gap:6px}
+  .hmleg i{width:12px;height:12px;border-radius:3px}
+
+  .note{margin-top:24px;font-family:&quot;Space Mono&quot;,monospace;font-size:11.5px;color:var(--muted);line-height:1.6;
+    border-top:1px solid var(--line);padding-top:16px}
+</style>
+</head>
+<body>
+<div class=&quot;wrap&quot;>
+
+  <div class=&quot;kicker&quot;>Learning Analytics · Concept Mockup</div>
+  <h1>Which misconception is holding the class back?</h1>
+
+  <div class=&quot;topbar&quot;>
+    <p style=&quot;max-width:48ch;color:var(--muted);font-size:15px&quot;>The quiz in the learning object isn't just a score — every wrong answer maps to a named misconception. Aggregated, it tells a teacher exactly what to reteach first.</p>
+    <div class=&quot;selector&quot;>
+      <label for=&quot;cls&quot;>Viewing class</label>
+      <select id=&quot;cls&quot;></select>
+    </div>
+  </div>
+
+  <div class=&quot;stats&quot; id=&quot;stats&quot;></div>
+
+  <div class=&quot;insight&quot; id=&quot;insight&quot;></div>
+
+  <div class=&quot;card&quot;>
+    <h3>Misconception prevalence</h3>
+    <div class=&quot;desc&quot;>Share of the class whose answers reveal each misconception. The most common one is what to address first.</div>
+    <div id=&quot;prev&quot;></div>
+  </div>
+
+  <div class=&quot;card&quot;>
+    <h3>Per-question breakdown</h3>
+    <div class=&quot;desc&quot;>How answers split on each item. The coral band is the distractor designed to catch a specific misconception.</div>
+    <div id=&quot;ques&quot;></div>
+  </div>
+
+  <div class=&quot;card&quot;>
+    <h3>Student-level view</h3>
+    <div class=&quot;desc&quot;>Each column is one student. Useful for spotting who needs follow-up, not just the class average.</div>
+    <div class=&quot;hmscroll&quot;><div class=&quot;hm&quot; id=&quot;hm&quot;></div></div>
+    <div class=&quot;hmleg&quot;>
+      <span><i style=&quot;background:var(--teal)&quot;></i> Correct</span>
+      <span><i style=&quot;background:var(--coral);opacity:.85&quot;></i> Incorrect</span>
+    </div>
+  </div>
+
+  <p class=&quot;note&quot;>Data shown is simulated to demonstrate the design. In production, this dashboard populates directly from learners' quiz responses in the interactive object — closing the loop from lesson → assessment → the teacher's next move.</p>
+
+</div>
+
+<script>
+/* ---- named misconceptions (tied to the 3 quiz items) ---- */
+const MIS = {
+  M1:{name:'Reads the graph as a map of the road', short:'a falling line ≠ &quot;going downhill&quot;',
+      action:'Re-run the &quot;There &amp; back&quot; scenario and pause on the falling line. Make the &quot;a graph is not a map&quot; point explicit before moving on.'},
+  M2:{name:'Confuses &quot;stopped&quot; with &quot;steady speed&quot;', short:'a flat line ≠ &quot;cruising&quot;',
+      action:'Focus on the flat-line case: zero gradient means stopped. Put a flat line and a gentle slope side by side.'},
+  M3:{name:'Confuses decelerating with reversing', short:'slowing down ≠ &quot;going backward&quot;',
+      action:'Run &quot;Slowing down&quot; then &quot;There &amp; back&quot; back to back, so students see that positive-but-falling velocity is still moving forward.'}
+};
+
+/* ---- simulated class data ---- */
+const CLASSES = {
+  cerdas:{name:'4 Cerdas', students:32, seed:7,
+    q:[{q:'Q1',text:'Falling d–t line',correct:38,mis:'M1',misPct:47},
+       {q:'Q2',text:'Flat d–t line',correct:69,mis:'M2',misPct:19},
+       {q:'Q3',text:'Falling v–t, still positive',correct:56,mis:'M3',misPct:31}]},
+  bestari:{name:'4 Bestari', students:29, seed:21,
+    q:[{q:'Q1',text:'Falling d–t line',correct:72,mis:'M1',misPct:18},
+       {q:'Q2',text:'Flat d–t line',correct:66,mis:'M2',misPct:22},
+       {q:'Q3',text:'Falling v–t, still positive',correct:41,mis:'M3',misPct:45}]},
+  dinamik:{name:'4 Dinamik', students:34, seed:42,
+    q:[{q:'Q1',text:'Falling d–t line',correct:79,mis:'M1',misPct:12},
+       {q:'Q2',text:'Flat d–t line',correct:58,mis:'M2',misPct:30},
+       {q:'Q3',text:'Falling v–t, still positive',correct:74,mis:'M3',misPct:17}]}
+};
+
+/* seeded PRNG for a stable student grid */
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+function buildGrid(cls){
+  const rnd=mulberry32(cls.seed);const N=cls.students;
+  // matrix[q][student] = true/false correct, generated from each q's correct%
+  return cls.q.map(q=>Array.from({length:N},()=>rnd()*100<q.correct));
+}
+
+function render(key){
+  const cls=CLASSES[key];
+  const grid=buildGrid(cls);
+  const N=cls.students;
+
+  // derived stats from the grid (so heatmap &amp; numbers always agree)
+  let correctCells=0;cls.q.forEach((_,i)=>grid[i].forEach(c=>{if(c)correctCells++}));
+  const avg=Math.round(correctCells/(N*3)*100);
+  let mastered=0;for(let s=0;s<N;s++){if(grid.every(row=>row[s]))mastered++;}
+
+  document.getElementById('stats').innerHTML=
+    `<div class=&quot;stat&quot;><div class=&quot;v&quot;>${N}</div><div class=&quot;l&quot;>students assessed</div></div>
+     <div class=&quot;stat&quot;><div class=&quot;v&quot;>${avg}<small>%</small></div><div class=&quot;l&quot;>average score</div></div>
+     <div class=&quot;stat&quot;><div class=&quot;v&quot;>${mastered}<small>/${N}</small></div><div class=&quot;l&quot;>mastered all three</div></div>`;
+
+  // prevalence (sorted desc)
+  const prev=cls.q.map(q=>({key:q.mis,pct:q.misPct,...MIS[q.mis]})).sort((a,b)=>b.pct-a.pct);
+  const top=prev[0];
+  document.getElementById('prev').innerHTML=prev.map((p,i)=>
+    `<div class=&quot;pbar ${i===0?'top1':''}&quot;>
+       <div class=&quot;top&quot;><div class=&quot;nm&quot;>${p.name}<small>${p.short}</small></div><div class=&quot;pc&quot;>${p.pct}%</div></div>
+       <div class=&quot;track&quot;><div class=&quot;fill&quot; style=&quot;width:0%&quot; data-w=&quot;${p.pct}&quot;></div></div>
+     </div>`).join('');
+
+  // headline insight
+  document.getElementById('insight').innerHTML=
+    `<div class=&quot;tag&quot;>Headline insight · ${cls.name}</div>
+     <h2>The most common misconception is <b>&quot;${top.name}&quot;</b> — present in <span class=&quot;pct&quot;>${top.pct}%</span> of the class.</h2>
+     <div class=&quot;action&quot;><span class=&quot;lab&quot;>Reteach first</span><span>${top.action}</span></div>`;
+
+  // per-question
+  document.getElementById('ques').innerHTML=cls.q.map(q=>{
+    const other=100-q.correct-q.misPct;
+    const m=MIS[q.mis];
+    return `<div class=&quot;qrow&quot;>
+      <div class=&quot;qh&quot;><div class=&quot;qt&quot;><span>${q.q}</span>${q.text}</div><div class=&quot;qc&quot;>${q.correct}% correct</div></div>
+      <div class=&quot;stack&quot;>
+        <div class=&quot;seg correct&quot; style=&quot;width:0%&quot; data-w=&quot;${q.correct}&quot;>${q.correct>9?q.correct+'%':''}</div>
+        <div class=&quot;seg mis&quot; style=&quot;width:0%&quot; data-w=&quot;${q.misPct}&quot;>${q.misPct>9?q.misPct+'%':''}</div>
+        <div class=&quot;seg other&quot; style=&quot;width:0%&quot; data-w=&quot;${other}&quot;>${other>9?other+'%':''}</div>
+      </div>
+      <div class=&quot;qlegend&quot;>
+        <span><i style=&quot;background:var(--teal)&quot;></i> Correct</span>
+        <span><i style=&quot;background:var(--coral)&quot;></i> &quot;${m.short}&quot; (${q.mis})</span>
+        <span><i style=&quot;background:#b9a98c&quot;></i> Other</span>
+      </div>
+    </div>`;
+  }).join('');
+
+  // heatmap (rows = questions, cols = students)
+  const hm=document.getElementById('hm');
+  hm.style.gridTemplateColumns=`auto repeat(${N},15px)`;
+  let html='';
+  cls.q.forEach((q,i)=>{
+    html+=`<div class=&quot;rowlab&quot;>${q.q}</div>`;
+    for(let s=0;s<N;s++) html+=`<div class=&quot;cell ${grid[i][s]?'ok':'no'}&quot;></div>`;
+  });
+  hm.innerHTML=html;
+
+  // animate bars
+  requestAnimationFrame(()=>{requestAnimationFrame(()=>{
+    document.querySelectorAll('.fill,.seg').forEach(el=>{el.style.width=el.dataset.w+'%';});
+  });});
+}
+
+/* init */
+const sel=document.getElementById('cls');
+Object.entries(CLASSES).forEach(([k,c])=>{const o=document.createElement('option');o.value=k;o.textContent=c.name;sel.appendChild(o);});
+sel.addEventListener('change',e=>render(e.target.value));
+render('cerdas');
+</script>
+</body>
+</html>
+" title="Learning analytics dashboard" loading="lazy" style="height:1100px"></iframe></div>
+  </section>
+
+  <!-- 5 TRANSFERABLE -->
+  <div class="band">
+    <div class="sec-label"><span class="n">5</span> Why the method transfers</div>
+    <h2>It's a maths topic. The method isn't.</h2>
+    <p>The subject here is school mathematics, but the design method is subject-agnostic — the same five steps work for compliance training, software onboarding, or sales upskilling, anywhere learners hold a confident-but-wrong mental model:</p>
+    <ol class="steps">
+      <li><span><b>Identify</b> a specific learner misconception — not a topic.</span></li>
+      <li><span><b>Design</b> an interactive that makes the wrong model visible.</span></li>
+      <li><span><b>Give feedback</b> at the exact point of error.</span></li>
+      <li><span><b>Measure</b> with distractors that diagnose, not just score.</span></li>
+      <li><span><b>Surface</b> the pattern to the facilitator as analytics.</span></li>
+    </ol>
+  </div>
+
+  <!-- 6 NEXT -->
+  <section>
+    <div class="sec-label"><span class="n">6</span> Next steps</div>
+    <h2>Where this goes.</h2>
+    <ul class="next">
+      <li><span class="ar">→</span> Connect the dashboard to live responses — replace the simulated data with real quiz submissions.</li>
+      <li><span class="ar">→</span> Add a short pre/post check to measure how much the misconception actually shifts.</li>
+      <li><span class="ar">→</span> User-test the "common mistake" view with real students and iterate.</li>
+    </ul>
+  </section>
+
+  <hr>
+  <p class="foot">Interactive learning object · misconception-driven instructional design · Form 4 Mathematics Ch.7</p>
+
+</div>
+<script>
+function openFrame(id){
+  var b=new Blob([document.getElementById(id).srcdoc],{type:'text/html'});
+  window.open(URL.createObjectURL(b),'_blank');
+}
+document.getElementById('openDemo').addEventListener('click',function(){openFrame('demoFrame');});
+document.getElementById('openDash').addEventListener('click',function(){openFrame('dashFrame');});
+</script>
+</body>
+</html>
