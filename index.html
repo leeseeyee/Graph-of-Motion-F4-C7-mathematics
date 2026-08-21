@@ -61,6 +61,28 @@
   .dcard p{font-size:14px;color:var(--muted);margin:0;line-height:1.5}
   .dcard p b{color:var(--ink)}
 
+  /* --- origin / lesson plan card --- */
+  .origin{background:var(--paper-2);border:1px solid var(--line);border-radius:14px;
+    padding:20px;box-shadow:var(--shadow);margin:26px 0}
+  .origin .lab{font-family:"Space Mono",monospace;font-size:10.5px;letter-spacing:.14em;
+    text-transform:uppercase;color:var(--muted);font-weight:700;margin-bottom:12px}
+  .origin h3{font-family:"Fraunces",serif;font-weight:600;font-size:20px;
+    letter-spacing:-.01em;line-height:1.2;margin-bottom:5px}
+  .origin .stamp{font-family:"Space Mono",monospace;font-size:11.5px;color:var(--muted);margin-bottom:18px}
+  .origin .box{background:var(--paper);border-left:3px solid var(--coral);
+    border-radius:0 10px 10px 0;padding:15px 17px;margin-bottom:16px}
+  .origin .box .t{font-family:"Space Mono",monospace;font-size:10.5px;letter-spacing:.12em;
+    text-transform:uppercase;color:var(--coral);font-weight:700;margin-bottom:8px}
+  .origin .box p{font-size:14.5px;color:var(--muted);line-height:1.55;margin:0 0 9px;max-width:none}
+  .origin .box .tools{font-family:"Space Mono",monospace;font-size:11.5px;color:var(--muted);margin:0}
+  .origin p.said{font-size:15px;line-height:1.6;color:var(--muted);margin-bottom:16px;max-width:none}
+  .origin p.said b{color:var(--ink)}
+  .origin a.pdf{font-family:"Space Mono",monospace;font-size:12px;letter-spacing:.08em;
+    text-transform:uppercase;color:var(--teal);font-weight:700;text-decoration:none;
+    border-bottom:1px solid rgba(13,107,99,.35);padding-bottom:2px;transition:border-color .15s}
+  .origin a.pdf:hover{border-bottom-color:var(--teal)}
+
+
   /* mapping list */
   .map{background:var(--paper-2);border:1px solid var(--line);border-radius:14px;overflow:hidden;margin-top:6px}
   .map .row{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--line)}
@@ -130,6 +152,20 @@
     <div class="sec-label"><span class="n">2</span> Design approach</div>
     <h2>Every decision exists to make the wrong model visible — then break it.</h2>
     <p>My first instinct was to just embed an existing GeoGebra simulation — there are good ones, and I’d used one in my own coursework. But that’s exactly where the problem showed up: it was too open. Students dragged the sliders, made a nice-looking graph, and never actually ran into the misconception. An open sandbox lets you slide right past the hard idea.</p>
+
+    <aside class="origin">
+      <div class="lab">Where this started</div>
+      <h3>The original lesson plan</h3>
+      <p class="stamp">PGT 201E coursework &middot; 60 min &middot; online &middot; ADDIE + Cognitive Load Theory</p>
+      <div class="box">
+        <div class="t">Introduction &mdash; as originally planned</div>
+        <p>Students view a slide deck for a visual overview, then observe a dynamic GeoGebra motion simulation to see how slope changes correspond to speed changes in real time.</p>
+        <p class="tools">Tools: Canva Slides + GeoGebra</p>
+      </div>
+      <p class="said">On paper this works &mdash; and it's what I submitted. Rebuilding it later, the problem in that one box became obvious: <b>the simulation demonstrates the correct relationship, but never forces a student to collide with the wrong one they already hold.</b></p>
+      <a class="pdf" href="LESSON_PLAN.pdf" target="_blank" rel="noopener">Full lesson plan (PDF) &#8599;</a>
+    </aside>
+
     <p>So instead of a free playground, I built something narrower — every scenario is chosen to put the wrong model under pressure. I worked through ADDIE, but a few decisions did the real heavy lifting:</p>
     <div class="decisions">
       <div class="dcard"><h3>A flat, straight track — on purpose</h3><p>The car only ever moves left–right, but the graph moves up and down. <b>That contradiction is the whole point.</b></p></div>
